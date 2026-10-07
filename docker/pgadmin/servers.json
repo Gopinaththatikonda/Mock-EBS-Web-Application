@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "APSRTC EBS (Docker)",
+      "Group": "EBS",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "ebs",
+      "Username": "ebs_user",
+      "SSLMode": "prefer"
+    }
+  }
+}

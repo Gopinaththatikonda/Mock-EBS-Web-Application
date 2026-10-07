@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APSRTC EBS Portal</title>
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/portal.css">
+</head>
+<body>
+  <a class="sr-only" href="#page">Skip to content</a>
+
+  <div class="gov-strip">
+    <div class="wrap">
+      <span class="gov-name">Andhra Pradesh State Road Transport Corporation</span>
+      <span class="demo-env">EBS MFA POC Environment</span>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/home">
+        <img src="/img/logo.svg" alt="APSRTC">
+        <span class="brand-text">
+          <span class="brand-title">APSRTC <span>EBS Portal</span></span>
+          <span class="brand-sub">Enterprise Business Suite</span>
+        </span>
+      </a>
+
+      <div class="header-right">
+        <span class="mfa-badge off" id="mfa-badge" title="Status of the Keycloak MFA gateway session (indicator only)">
+          <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-shield"></use></svg>
+          <span>Checking MFA…</span>
+        </span>
+        <a class="user-box" href="/profile" title="My profile">
+          <span class="avatar"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-user"></use></svg></span>
+          <span class="user-meta">
+            <span class="user-name" id="hdr-name">&nbsp;</span>
+            <span class="user-email" id="hdr-email">&nbsp;</span>
+          </span>
+        </a>
+        <button type="button" class="btn btn-outline" id="logout-btn" title="Sign out of the EBS application">
+          <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-logout"></use></svg>
+          <span class="btn-logout-text">Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="main-nav" id="main-nav" aria-label="Main">
+    <div class="wrap">
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-list">
+        <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-menu"></use></svg> Menu
+      </button>
+      <ul class="nav-list" id="nav-list">
+        <li><a href="/home" data-route="/home"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-home"></use></svg>Home</a></li>
+        <li><a href="/dashboard" data-route="/dashboard"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-dashboard"></use></svg>Dashboard</a></li>
+        <li><a href="/services" data-route="/services"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-bus"></use></svg>Services</a></li>
+        <li><a href="/operations" data-route="/operations"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-activity"></use></svg>Operations</a></li>
+        <li><a href="/employees" data-route="/employees"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-users"></use></svg>Employees</a></li>
+        <li><a href="/reports" data-route="/reports"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-chart"></use></svg>Reports</a></li>
+        <li><a href="/track-service" data-route="/track-service"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-pin"></use></svg>Track Service</a></li>
+        <li><a href="/grievance" data-route="/grievance"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-message"></use></svg>Grievance</a></li>
+        <li><a href="/administration" data-route="/administration"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-sliders"></use></svg>Administration</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="page" id="page" tabindex="-1">
+    <div class="wrap" id="page-root"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>&copy; APSRTC EBS Portal &middot; Proof of Concept. Items marked "Demo data" are illustrative, not live APSRTC records.</span>
+      <span>MFA gateway session and EBS session are managed independently.</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/portal.js"></script>
+</body>
+</html>

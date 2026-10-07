@@ -1,0 +1,75 @@
+# APSRTC EBS Portal - application + PostgreSQL + pgAdmin.
+# Secrets come from .env (copy .env.example). Nothing sensitive is hard-coded here.
+#
+# Ports are published on 127.0.0.1 only: OAuth2 Proxy on the same host reaches the app at
+# http://127.0.0.1:8090, and the app cannot be reached from outside without the MFA gateway.
+
+name: apsrtc-ebs
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ebs}
+      POSTGRES_USER: ${DB_USER:-ebs_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Host access for local tools only. pgAdmin and the app use the Docker network (postgres:5432).
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ebs-net]
+
+  ebs-app:
+    build: .
+    image: apsrtc-ebs-app:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 8090
+      DB_HOST: postgres          # Docker service name - never "localhost" inside the container
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ebs}
+      DB_USER: ${DB_USER:-ebs_user}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
+      SESSION_TTL_MINUTES: ${SESSION_TTL_MINUTES:-30}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      REQUIRE_GATEWAY_AUTH: ${REQUIRE_GATEWAY_AUTH:-false}
+      REQUIRED_GATEWAY_GROUP: ${REQUIRED_GATEWAY_GROUP:-}
+    ports:
+      - "${EBS_BIND:-127.0.0.1}:8090:8090"
+    networks: [ebs-net]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?PGADMIN_EMAIL must be set in .env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD must be set in .env}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    ports:
+      - "${PGADMIN_BIND:-127.0.0.1}:5050:80"
+    networks: [ebs-net]
+
+volumes:
+  pgdata:
+  pgadmin-data:
+
+networks:
+  ebs-net:

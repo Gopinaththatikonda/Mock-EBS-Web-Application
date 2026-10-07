@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | APSRTC EBS Portal</title>
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/portal.css">
+</head>
+<body class="auth-body">
+  <div class="gov-strip">
+    <div class="wrap">
+      <span class="gov-name">Andhra Pradesh State Road Transport Corporation</span>
+      <span class="demo-env">EBS MFA POC Environment</span>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/">
+        <img src="/img/logo.svg" alt="APSRTC">
+        <span class="brand-text">
+          <span class="brand-title">APSRTC <span>EBS Portal</span></span>
+          <span class="brand-sub">Enterprise Business Suite</span>
+        </span>
+      </a>
+    </div>
+  </header>
+
+  <main class="auth-main">
+    <div class="auth-grid signup-grid">
+      <aside class="auth-info">
+        <div>
+          <h2>EBS Account Registration</h2>
+          <p>Register your EBS application account. Your details are stored securely in the EBS database and your password is never stored in readable form.</p>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-user"></use></svg></span>
+            <span><span class="step-title">Register</span><br><span class="step-desc">Provide your employee details</span></span>
+          </li>
+          <li>
+            <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-key"></use></svg></span>
+            <span><span class="step-title">Sign in</span><br><span class="step-desc">Use your username or Employee ID</span></span>
+          </li>
+          <li>
+            <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-dashboard"></use></svg></span>
+            <span><span class="step-title">Access EBS</span><br><span class="step-desc">Modules based on your assigned role</span></span>
+          </li>
+        </ol>
+        <p class="fine">MFA (Google Authenticator) is managed separately by the Keycloak gateway.</p>
+      </aside>
+
+      <section class="auth-form" aria-labelledby="signup-title">
+        <h1 id="signup-title">Create EBS Account</h1>
+        <p class="lead">All fields are mandatory.</p>
+
+        <div id="alert"></div>
+
+        <form id="signup-form" novalidate>
+          <div class="form-grid">
+            <div class="field span-2">
+              <label for="fullName">Full Name <span class="req">*</span></label>
+              <input id="fullName" name="fullName" type="text" autocomplete="name" maxlength="100" required autofocus>
+              <div class="error" id="fullName-error"></div>
+            </div>
+            <div class="field">
+              <label for="employeeId">Employee ID <span class="req">*</span></label>
+              <input id="employeeId" name="employeeId" type="text" maxlength="20" placeholder="e.g. APS10234" required>
+              <div class="error" id="employeeId-error"></div>
+            </div>
+            <div class="field">
+              <label for="mobile">Mobile Number <span class="req">*</span></label>
+              <input id="mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="10-digit mobile" required>
+              <div class="error" id="mobile-error"></div>
+            </div>
+            <div class="field span-2">
+              <label for="email">Email <span class="req">*</span></label>
+              <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+              <div class="error" id="email-error"></div>
+            </div>
+            <div class="field span-2">
+              <label for="username">Username <span class="req">*</span></label>
+              <input id="username" name="username" type="text" autocomplete="username" maxlength="30" required>
+              <div class="hint">3-30 characters: lowercase letters, numbers, . _ -</div>
+              <div class="error" id="username-error"></div>
+            </div>
+            <div class="field">
+              <label for="password">Password <span class="req">*</span></label>
+              <div class="input-group">
+                <input id="password" name="password" type="password" autocomplete="new-password" maxlength="72" required>
+                <button type="button" class="toggle-pw" data-toggle="password" aria-label="Show password">
+                  <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-eye"></use></svg>
+                </button>
+              </div>
+              <div class="hint">Minimum 8 characters, with a letter and a number</div>
+              <div class="error" id="password-error"></div>
+            </div>
+            <div class="field">
+              <label for="confirmPassword">Confirm Password <span class="req">*</span></label>
+              <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" maxlength="72" required>
+              <div class="error" id="confirmPassword-error"></div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+        </form>
+
+        <p class="auth-alt">Already have an account? <a href="/">Sign in</a></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <span>&copy; APSRTC EBS Portal &middot; Proof of Concept</span>
+      <span>Protected by Keycloak MFA &amp; OAuth2 Proxy</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/signup.js"></script>
+</body>
+</html>

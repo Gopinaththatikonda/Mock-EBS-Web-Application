@@ -1,18 +1,23 @@
 {
   "name": "mock-ebs",
   "version": "1.0.0",
-  "description": "Mock EBS web application for testing OAuth2 Proxy + Keycloak MFA authentication flow",
+  "description": "APSRTC EBS Portal - mock EBS application behind OAuth2 Proxy + Keycloak MFA, with PostgreSQL-backed EBS login",
   "main": "server.js",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node --watch server.js",
+    "migrate": "node src/db/migrate.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12"
   },
   "license": "UNLICENSED",
   "dependencies": {
-    "express": "^5.2.1"
+    "bcryptjs": "^3.0.3",
+    "connect-pg-simple": "^10.0.0",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "pg": "^8.23.1"
   }
 }

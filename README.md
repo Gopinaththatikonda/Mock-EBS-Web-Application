@@ -1,188 +1,269 @@
-# Mock EBS Web Application
+# APSRTC EBS Portal (Mock EBS Application)
 
-A minimal Node.js/Express application that imitates an "EBS Enterprise Banking System" dashboard. It exists only to test an **OAuth2 Proxy + Keycloak MFA** authentication flow.
+An APSRTC-inspired **Enterprise Business Suite (EBS) portal** used to demonstrate a layered security model:
 
-Real authentication (SSO + MFA) is done entirely upstream by Keycloak and OAuth2 Proxy; the app displays the identity headers that OAuth2 Proxy forwards. There is no database.
+1. **MFA gateway**: Nginx → OAuth2 Proxy → Keycloak (username/password + Google Authenticator TOTP)
+2. **EBS application login**: the portal's own sign-in, verified by a Node.js API against **PostgreSQL** (bcrypt)
+3. **Authorisation**: `EBS_ACCESS` group at the gateway, plus role-based access (`user` / `admin`) in the EBS API
 
-On top of that, the frontend includes a **demo-only** application Signup/Login flow backed by browser `localStorage` (see [Demo application login](#demo-application-login-localstorage)). It is purely for UI demonstration and is not an authentication boundary.
+The two sessions are deliberately independent. Passing Keycloak MFA does **not** sign you in to EBS, and signing out of EBS does **not** end the gateway session.
+
+> Business figures (services, depots, employees, reports, grievances) are **illustrative demo data** and are labelled "Demo data" in the UI. They are not live APSRTC records. EBS user accounts are real rows in PostgreSQL.
 
 ## Architecture
 
 ```text
-User Browser
-     |
-     v
-   Nginx
-     |
-     v
-OAuth2 Proxy :4180   <-->  Keycloak (OIDC + MFA)
-     |
-     | authenticated user (identity headers)
-     v
-Mock EBS App :8081  (Express.js)
+Browser
+   │
+   ▼
+Nginx :80
+   │
+   ▼
+OAuth2 Proxy :4180 ── no gateway session ──► Keycloak (username + password + TOTP)
+   │                                         (EBS_ACCESS group required)
+   │  OAuth2 Proxy session + identity headers
+   ▼
+APSRTC EBS Portal  (Node.js / Express, Docker)  127.0.0.1:8090
+   │   EBS login page → POST /api/auth/login → EBS session (HTTP-only cookie)
+   ▼
+PostgreSQL :5432 (Docker network, bound to 127.0.0.1 on the host)
+   ▲
+pgAdmin :5050 (Docker network → host "postgres")
 ```
 
-## Requirements
+| Component       | Port | Exposure                                       |
+|-----------------|------|------------------------------------------------|
+| EBS application | 8090 | `127.0.0.1` only (reached via OAuth2 Proxy)    |
+| PostgreSQL      | 5432 | Docker network; `127.0.0.1` on host            |
+| pgAdmin         | 5050 | `127.0.0.1` by default (`PGADMIN_BIND`)        |
 
-- Node.js 18 or newer (Node 20 LTS recommended)
-- npm
+Ports 8080/8081 are not used. The app refuses to start on them.
 
-On Amazon Linux 2023:
+## Project structure
 
-```bash
-sudo dnf install -y nodejs20 git
-# if `node` isn't on PATH afterwards:
-sudo alternatives --set node /usr/bin/node-20 2>/dev/null || true
-node -v
+```text
+├── server.js                 # bootstrap: config check → wait for DB → migrations → listen
+├── src/
+│   ├── app.js                # Express app: security headers, session, routes
+│   ├── config/               # env.js (environment), database.js (pg pool)
+│   ├── db/migrate.js         # runs /migrations once each, tracked in schema_migrations
+│   ├── routes/               # auth.routes, user.routes, page.routes
+│   ├── controllers/          # auth, user, demo
+│   ├── services/             # auth.service (bcrypt, register, authenticate)
+│   ├── models/user.js        # parameterised SQL for the users table
+│   ├── middleware/           # auth (session/role), gateway, validation, rateLimit, security, errorHandler
+│   └── data/demo-data.js     # illustrative APSRTC-style demo data
+├── migrations/               # 001_create_users.sql, 002_create_user_sessions.sql
+├── views/                    # login, signup, forgot-password, app shell, 404
+├── public/                   # css/, img/ (logo, icons), js/services (API layer), js/pages
+├── docker/pgadmin/servers.json
+├── Dockerfile
+├── docker-compose.yml
+└── .env.example
 ```
 
-## Installation
+## Quick start (Docker, recommended)
 
 ```bash
+cp .env.example .env
+# Edit .env: set DB_PASSWORD, SESSION_SECRET (openssl rand -hex 32), PGADMIN_EMAIL, PGADMIN_PASSWORD
+
+docker compose build
+docker compose up -d
+docker compose ps
+curl http://localhost:8090/health
+# {"status":"ok","service":"mock-ebs","port":8090}
+```
+
+Useful commands:
+
+```bash
+docker compose ps                 # container status
+docker compose logs -f            # all logs
+docker compose logs -f ebs-app    # application logs
+docker compose build              # rebuild image after code changes
+docker compose up -d --build      # rebuild + restart
+docker compose down               # stop (data is kept in the pgdata volume)
+docker compose down -v            # stop AND delete database + pgAdmin data
+```
+
+The database and user are created automatically from `DB_NAME`, `DB_USER` and `DB_PASSWORD` the **first** time the `pgdata` volume is initialised. Tables are created by the app's migrations on start, and each migration runs only once. Changing `DB_PASSWORD` later does not change the existing database password; use `ALTER USER` or recreate the volume.
+
+### Amazon Linux 2023 (EC2)
+
+```bash
+sudo dnf install -y docker git
+sudo systemctl enable --now docker
+sudo usermod -aG docker ec2-user      # log out and back in
+sudo mkdir -p /usr/local/lib/docker/cli-plugins
+sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
 git clone https://github.com/Gopinaththatikonda/Mock-EBS-Web-Application.git
 cd Mock-EBS-Web-Application
+cp .env.example .env && vi .env
+docker compose up -d --build
+```
+
+Do **not** open 8090, 5432 or 5050 in the EC2 security group. Only Nginx (80/443) should be public.
+
+## Local development (without Docker for the app)
+
+Requires Node.js 20.12+ and a reachable PostgreSQL.
+
+```bash
 npm install
+cp .env.example .env            # set DB_HOST=localhost and the DB port you use
+docker compose up -d postgres   # or use any PostgreSQL instance
+npm run dev                     # node --watch; migrations run automatically
 ```
 
-For production installs you can use `npm ci --omit=dev`.
+`npm run migrate` applies migrations without starting the server.
 
-## Start the application
+## Environment variables
 
-```bash
-npm start
-```
+| Variable                 | Default        | Purpose                                                                 |
+|--------------------------|----------------|-------------------------------------------------------------------------|
+| `NODE_ENV`               | `development`  | `production` enforces a strong `SESSION_SECRET`                         |
+| `PORT`                   | `8090`         | App port (8080/8081 rejected)                                           |
+| `DB_HOST`                | `localhost`    | Compose forces `postgres` (service name)                                |
+| `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | `5432` / `ebs` / `ebs_user` / - | PostgreSQL connection           |
+| `SESSION_SECRET`         | -              | Signs the EBS session cookie (required)                                 |
+| `SESSION_TTL_MINUTES`    | `30`           | Idle timeout; extended on each request                                  |
+| `COOKIE_SECURE`          | `false`        | Set `true` when users reach Nginx over HTTPS                            |
+| `REQUIRE_GATEWAY_AUTH`   | `false`        | `true`: EBS APIs reject requests without OAuth2 Proxy identity headers  |
+| `REQUIRED_GATEWAY_GROUP` | (empty)        | e.g. `EBS_ACCESS`: app-side group check (defence in depth)              |
+| `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` | -  | pgAdmin login                                                           |
+| `EBS_BIND` / `PGADMIN_BIND` | `127.0.0.1` | Host interface for published ports                                     |
+| `POSTGRES_HOST_PORT`     | `5432`         | Host port for PostgreSQL (change if 5432 is already in use)             |
 
-Expected output:
+`.env` is git-ignored; only `.env.example` (placeholders) is committed.
+
+## OAuth2 Proxy / Keycloak integration
+
+Nginx, OAuth2 Proxy and Keycloak configuration are **not** part of this repository and do not change, except for one line. Once the new app answers on 8090, point the OAuth2 Proxy upstream at it:
 
 ```text
-========================================
- Mock EBS Application
-========================================
- Server: http://0.0.0.0:8081
- Environment: development
-========================================
-```
-
-### Environment variables
-
-| Variable   | Default       | Description                  |
-|------------|---------------|------------------------------|
-| `PORT`     | `8081`        | Port to listen on            |
-| `HOST`     | `0.0.0.0`     | Interface to bind to         |
-| `NODE_ENV` | `development` | Environment name (logged)    |
-
-Example: `PORT=8081 NODE_ENV=production npm start`
-
-## Routes
-
-| Route           | Description                                                              |
-|-----------------|--------------------------------------------------------------------------|
-| `/`             | EBS Sign In page (demo login)                                            |
-| `/signup`       | EBS Sign Up page (demo account creation)                                 |
-| `/dashboard`    | Dashboard: auth/MFA status, user info, SSO identity, system status       |
-| `/accounts`     | Mock accounts list                                                       |
-| `/transactions` | Mock transactions list                                                   |
-| `/profile`      | Demo account + SSO identity                                              |
-| `/health`       | Health check: `{"status":"ok","service":"mock-ebs","port":8081}`         |
-| `/api/user`     | Identity read from OAuth2 Proxy headers                                  |
-
-`/dashboard`, `/accounts`, `/transactions` and `/profile` redirect to `/` in the browser when there is no demo login.
-
-## Demo application login (localStorage)
-
-> **DEMO ONLY.** Accounts, including passwords in plain text, are stored in the browser's `localStorage`. Do not use real passwords, and do not treat this as authentication. The real boundary is
-> `Browser → Nginx → OAuth2 Proxy → Keycloak → Google Authenticator MFA → Mock EBS`.
-
-Flow: **Sign Up** (`/signup`) → redirected to **Sign In** (`/`, no auto-login) → **Dashboard** (`/dashboard`).
-
-| localStorage key      | Contents                                                           |
-|-----------------------|--------------------------------------------------------------------|
-| `ebs_users`           | Array of `{ name, username, email, password }` (multiple users)    |
-| `ebs_logged_in_user`  | Current demo session `{ name, username, email }` (no password)     |
-
-- Signup validates required fields, email format, username format, password length (8+) and confirmation, and rejects duplicate usernames/emails (case-insensitive).
-- Login accepts username **or** email and shows `Invalid username/email or password` on failure.
-- The dashboard still calls `/api/user` and shows the OAuth2 Proxy (Keycloak) identity and MFA status alongside the demo user.
-
-Two sign-out buttons are shown in the header:
-
-| Button           | Effect                                                                                         |
-|------------------|------------------------------------------------------------------------------------------------|
-| **Logout**       | Removes `ebs_logged_in_user` and returns to `/`. The OAuth2 Proxy / Keycloak session is kept.   |
-| **SSO Sign Out** | Removes `ebs_logged_in_user`, then goes to `/oauth2/sign_out` (handled by OAuth2 Proxy).        |
-
-Data is per browser/origin: users created in one browser are not visible in another. To reset, clear site data or run `localStorage.clear()` in the browser console.
-
-## Test
-
-```bash
-curl -i http://localhost:8081/health
-```
-
-Simulate headers that OAuth2 Proxy would send:
-
-```bash
-curl http://localhost:8081/api/user \
-  -H "X-Auth-Request-User: jdoe" \
-  -H "X-Auth-Request-Email: jdoe@example.com"
-# {"authenticated":true,"username":"jdoe","email":"jdoe@example.com"}
-
-curl http://localhost:8081/api/user
-# {"authenticated":false,"username":null,"email":null}
-```
-
-## OAuth2 Proxy integration
-
-OAuth2 Proxy should forward authenticated requests to the app's upstream:
-
-```text
-http://127.0.0.1:8081
-```
-
-Relevant OAuth2 Proxy settings (secrets and client credentials must come from your own config/environment, never this repo):
-
-```text
+# before
 --upstream=http://127.0.0.1:8081
---http-address=0.0.0.0:4180
---pass-user-headers=true         # X-Forwarded-User / X-Forwarded-Email / X-Forwarded-Preferred-Username
---set-xauthrequest=true          # X-Auth-Request-User / X-Auth-Request-Email / X-Auth-Request-Preferred-Username
---skip-auth-route=^/health$      # optional: allow unauthenticated health checks
+# after
+--upstream=http://127.0.0.1:8090
 ```
 
-Headers read by the app (first match wins):
+(Equivalent in a config file: `upstreams = [ "http://127.0.0.1:8090" ]`.) Then restart OAuth2 Proxy. If OAuth2 Proxy itself runs in a container, `127.0.0.1` refers to that container. In that case use the host's address, or join it to the `apsrtc-ebs_ebs-net` network and use `http://ebs-app:8090`.
 
-- **username**: `X-Auth-Request-Preferred-Username`, `X-Forwarded-Preferred-Username`, `X-Auth-Request-User`, `X-Forwarded-User`
-- **email**: `X-Auth-Request-Email`, `X-Forwarded-Email`
+Identity headers read by the app (set by `--pass-user-headers=true` and/or `--set-xauthrequest=true`):
 
-The **SSO Sign Out** button links to `/oauth2/sign_out`, which is handled by OAuth2 Proxy (configure `--whitelist-domain` / Keycloak `end_session_endpoint` redirect if you also want to end the Keycloak session).
+| Purpose  | Headers (first match wins)                                                                                       |
+|----------|-------------------------------------------------------------------------------------------------------------------|
+| Username | `X-Auth-Request-Preferred-Username`, `X-Forwarded-Preferred-Username`, `X-Auth-Request-User`, `X-Forwarded-User` |
+| Email    | `X-Auth-Request-Email`, `X-Forwarded-Email`                                                                       |
+| Groups   | `X-Auth-Request-Groups`, `X-Forwarded-Groups` (leading `/` from Keycloak paths is stripped)                     |
 
-MFA itself is enforced by the Keycloak authentication flow (e.g. OTP required). The dashboard shows MFA as "Verified" whenever OAuth2 Proxy forwards an authenticated user, because a user cannot reach the app without completing the Keycloak flow.
+### EBS_ACCESS authorisation
 
-### Security note
+Enforce the group at the gateway, so users without it never reach the app:
 
-The app trusts identity headers as-is. Port `8081` must **not** be reachable from outside the host: restrict it in the EC2 security group (or bind with `HOST=127.0.0.1` when OAuth2 Proxy runs on the same machine) so only OAuth2 Proxy can reach it. Otherwise anyone could spoof the headers.
-
-## Running as a service (optional, Amazon Linux 2023)
-
-`/etc/systemd/system/mock-ebs.service`:
-
-```ini
-[Unit]
-Description=Mock EBS Application
-After=network.target
-
-[Service]
-WorkingDirectory=/opt/Mock-EBS-Web-Application
-ExecStart=/usr/bin/node server.js
-Environment=PORT=8081 NODE_ENV=production
-Restart=on-failure
-User=ec2-user
-
-[Install]
-WantedBy=multi-user.target
+```text
+--provider=keycloak-oidc
+--allowed-group=EBS_ACCESS
 ```
+
+Keycloak needs a **Group Membership** mapper on the client (token claim name `groups`, *Full group path* off) and the users must be members of `EBS_ACCESS`. As an optional second check inside the app, set `REQUIRED_GATEWAY_GROUP=EBS_ACCESS` (and `REQUIRE_GATEWAY_AUTH=true`) in `.env`. No code changes are needed.
+
+### Session separation
+
+| Layer | Session                     | Created by                              | Ended by                                  |
+|-------|-----------------------------|-----------------------------------------|-------------------------------------------|
+| 1     | `_oauth2_proxy` cookie      | Keycloak password + TOTP                | `/oauth2/sign_out` (OAuth2 Proxy)         |
+| 2     | `ebs.sid` cookie (HTTP-only, server-side in `user_sessions`) | `POST /api/auth/login` | **Logout** button → `POST /api/auth/logout` |
+
+The EBS session records the gateway user it was created under. If a different Keycloak user appears in the same browser, the EBS session is invalidated automatically.
+
+## API
+
+| Method | Path                       | Auth                | Description |
+|--------|----------------------------|---------------------|-------------|
+| GET    | `/health`                  | none                | `{"status":"ok","service":"mock-ebs","port":8090}` |
+| GET    | `/health/db`               | none                | Database connectivity (503 when down) |
+| GET    | `/api/user`                | none                | Gateway identity (unchanged top-level fields) + `ebs` session summary |
+| POST   | `/api/auth/signup`         | none (rate-limited) | Register an EBS user (stored in PostgreSQL; no auto sign-in) |
+| POST   | `/api/auth/login`          | none (rate-limited) | `{ "username": "<username or Employee ID>", "password": "..." }` → creates the EBS session |
+| POST   | `/api/auth/logout`         | none                | Clears the EBS session only |
+| GET    | `/api/auth/session`        | none                | `{ authenticated, user, code }` |
+| GET    | `/api/profile`             | EBS session         | EBS user + gateway identity + session times |
+| GET    | `/api/demo/summary`        | EBS session         | Demo KPIs and notices (`demo: true`) |
+| GET    | `/api/demo/:dataset`       | EBS session         | Paginated demo data: `serviceOperations, employees, requests, activity, depots, services, reports, grievances` (`?page&pageSize&q`) |
+| GET    | `/api/demo/track/:serviceNo` | EBS session       | Demo service tracking |
+| GET    | `/api/admin/users`         | EBS session + `admin` | Registered EBS users from PostgreSQL |
+
+`/api/user` example (behind OAuth2 Proxy, before EBS sign-in):
+
+```json
+{
+  "authenticated": true,
+  "username": "testuser",
+  "email": "panduthatikonda445@gmail.com",
+  "groups": ["EBS_ACCESS"],
+  "ebs": { "authenticated": false, "user": null }
+}
+```
+
+Errors are always `{ "success": false, "message": "..." }` (plus `code`, `errors` for field validation). Internal or database errors are logged on the server and never sent to the browser.
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now mock-ebs
+curl -X POST http://localhost:8090/api/auth/signup -H 'Content-Type: application/json' \
+  -d '{"fullName":"Test User","employeeId":"EBS001","email":"test@example.com","mobile":"9876543210","username":"testuser","password":"password123"}'
+# {"success":true,"message":"User registered successfully"}
 ```
+
+## Portal pages
+
+`/` (EBS sign-in), `/signup`, `/forgot-password`, and behind the EBS session: `/home`, `/dashboard`, `/services`, `/operations`, `/employees`, `/reports`, `/track-service`, `/grievance`, `/administration` (admin role), `/profile`.
+
+## pgAdmin
+
+Open `http://<server>:5050` (with the default `PGADMIN_BIND=127.0.0.1`, use an SSH tunnel: `ssh -L 5050:127.0.0.1:5050 ec2-user@<server>`) and sign in with `PGADMIN_EMAIL` / `PGADMIN_PASSWORD`.
+
+A server named **APSRTC EBS (Docker)** is pre-registered:
+
+```text
+Host:     postgres      # Docker service name, NOT localhost
+Port:     5432
+Database: ebs
+Username: ebs_user      # password = DB_PASSWORD from .env
+```
+
+(`docker/pgadmin/servers.json` assumes the default `DB_NAME`/`DB_USER`. Edit it if you change them.)
+
+Make a user an EBS administrator (enables the Administration page):
+
+```sql
+UPDATE users SET role = 'admin' WHERE username = 'testuser';
+```
+
+## Security notes
+
+- Passwords hashed with bcrypt (cost 12). The hash is never returned by any API.
+- Server-side validation on all inputs; parameterised SQL only; unique username/email/employee_id.
+- EBS session: server-side (PostgreSQL), HTTP-only `SameSite=Lax` cookie, regenerated on login, 30-minute idle timeout.
+- No credentials or user data in `localStorage` (old demo data is removed on first visit).
+- Same-origin only: no CORS headers are sent. State-changing APIs require `Content-Type: application/json` (CSRF protection).
+- Content-Security-Policy (no inline script/style), `X-Frame-Options: DENY`, `nosniff`.
+- Login rate limit: 10 attempts per 15 minutes per IP+username. Signup: 20 per hour per IP.
+- Generic login failure message and constant-time comparison for unknown users (no username enumeration).
+
+## End-to-end test checklist
+
+1. Open the published URL: OAuth2 Proxy sign-in.
+2. Sign in: Keycloak login.
+3. Username/password: TOTP prompt.
+4. Google Authenticator OTP: callback succeeds.
+5. APSRTC EBS **login page** is shown, with "MFA Protected" and step 1 marked verified.
+6. Create an account: row appears in `users` (check in pgAdmin; `password_hash` starts with `$2b$`).
+7. Sign in with the username or Employee ID: dashboard.
+8. Logout: back on the EBS login page. The gateway session remains (no Keycloak prompt).
+9. Refresh while signed in stays signed in. After logout, `/dashboard` redirects to sign-in.
+10. `docker compose down && docker compose up -d`: users (and active sessions) persist.
+11. `curl http://localhost:8090/health`: HTTP 200.
