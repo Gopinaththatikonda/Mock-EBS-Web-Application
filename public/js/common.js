@@ -5,10 +5,10 @@ export function renderMfaBadge(el, gateway) {
   if (!el) return;
   const ok = gateway && gateway.authenticated;
   el.classList.toggle('off', !ok);
-  el.querySelector('span').textContent = ok ? 'MFA Protected' : 'MFA gateway not detected';
+  el.querySelector('span').textContent = ok ? 'MFA Protected' : 'MFA not detected';
   el.title = ok
-    ? `MFA gateway session verified for ${gateway.email || gateway.username} (Keycloak + Google Authenticator)`
-    : 'No identity was received from OAuth2 Proxy. In production this page is only reachable through the MFA gateway.';
+    ? `Multi-factor authentication verified for ${gateway.email || gateway.username}`
+    : 'Multi-factor authentication was not detected for this connection.';
 }
 
 export function wirePasswordToggles(root = document) {
@@ -32,10 +32,6 @@ export function setFieldErrors(form, errors = {}) {
   });
   const first = form.querySelector('[aria-invalid="true"]');
   if (first) first.focus();
-}
-
-export function showAlert(host, html) {
-  host.innerHTML = html;
 }
 
 // Only allow redirects to local portal paths.

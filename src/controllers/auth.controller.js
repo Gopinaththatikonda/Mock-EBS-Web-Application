@@ -33,14 +33,18 @@ async function login(req, res) {
   res.json({ success: true, message: 'Signed in successfully', user });
 }
 
-// POST /api/auth/logout -> clears ONLY the EBS application session.
-// The OAuth2 Proxy / Keycloak gateway session is untouched (that is /oauth2/sign_out).
+// POST /api/auth/logout -> destroys the application session, then hands the browser the
+// gateway sign-out URL so the OAuth2 Proxy (and Keycloak) sessions are ended as well.
 async function logout(req, res) {
   const username = req.session && req.session.username;
   if (req.session) await promisify((cb) => req.session.destroy(cb));
   res.clearCookie(config.session.cookieName, { path: '/' });
-  if (username) console.log(`[auth] logout: ${username}`);
-  res.json({ success: true, message: 'You have been signed out of the EBS portal.' });
+  if (username) console.log(`[auth] logout: ${username} (all sessions)`);
+  res.json({
+    success: true,
+    message: 'You have been signed out successfully.',
+    redirect: config.gateway.logoutUrl,
+  });
 }
 
 // GET /api/auth/session -> current EBS session state (always 200).

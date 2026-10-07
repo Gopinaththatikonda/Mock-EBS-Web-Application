@@ -3,30 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In | APSRTC EBS Portal</title>
-  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <title>Sign In | APSRTC Portal</title>
+  <link rel="icon" href="/img/apsrtc-logo.png" type="image/png">
   <link rel="stylesheet" href="/css/portal.css">
 </head>
 <body class="auth-body">
   <div class="gov-strip">
     <div class="wrap">
-      <span class="gov-name">Andhra Pradesh State Road Transport Corporation</span>
-      <span class="demo-env">EBS MFA POC Environment</span>
+      <span class="gov-name">Employee Services &amp; Operations Portal</span>
+      <span class="demo-env">Secure Access &middot; MFA Enabled</span>
     </div>
   </div>
 
   <header class="site-header">
     <div class="wrap">
       <a class="brand" href="/">
-        <img src="/img/logo.svg" alt="APSRTC">
+        <img src="/img/apsrtc-logo.png" alt="APSRTC emblem" width="56" height="56">
         <span class="brand-text">
-          <span class="brand-title">APSRTC <span>EBS Portal</span></span>
-          <span class="brand-sub">Enterprise Business Suite</span>
+          <span class="brand-title">APSRTC</span>
+          <span class="brand-sub">Andhra Pradesh State Road Transport Corporation</span>
         </span>
       </a>
-      <span class="mfa-badge off" id="mfa-badge" title="Status of the Keycloak MFA gateway session">
+      <span class="mfa-badge off" id="mfa-badge" title="Multi-factor authentication status">
         <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-shield"></use></svg>
-        <span>Checking MFA gateway…</span>
+        <span>Checking MFA…</span>
       </span>
     </div>
   </header>
@@ -36,33 +36,31 @@
       <aside class="auth-info">
         <div>
           <h2>Secure APSRTC Enterprise Access</h2>
-          <p>Access to the EBS Portal is protected by independent security layers.</p>
+          <p>Access to the portal is protected by multiple independent security layers.</p>
         </div>
         <ol class="steps">
           <li id="step-gateway">
             <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-shield"></use></svg></span>
-            <span><span class="step-title">1. MFA Gateway</span><br>
-              <span class="step-desc" id="step-gateway-desc">Keycloak username, password and Google Authenticator OTP</span></span>
+            <span><span class="step-title">1. Multi-Factor Authentication</span><br>
+              <span class="step-desc" id="step-gateway-desc">Username, password and Google Authenticator OTP</span></span>
           </li>
           <li class="current">
             <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-key"></use></svg></span>
-            <span><span class="step-title">2. EBS Application Sign-In</span><br>
-              <span class="step-desc">Your EBS username or Employee ID and password</span></span>
+            <span><span class="step-title">2. Portal Sign-In</span><br>
+              <span class="step-desc">Your username or Employee ID and password</span></span>
           </li>
           <li>
             <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-dashboard"></use></svg></span>
-            <span><span class="step-title">3. Business Application Access</span><br>
-              <span class="step-desc">Role-based access to EBS modules</span></span>
+            <span><span class="step-title">3. Secure Access</span><br>
+              <span class="step-desc">Role-based access to portal modules</span></span>
           </li>
         </ol>
-        <p class="fine">Authorised personnel only. All access is logged and monitored.</p>
+        <div data-bus-scene></div>
       </aside>
 
       <section class="auth-form" aria-labelledby="login-title">
-        <h1 id="login-title">Sign in to EBS Portal</h1>
-        <p class="lead">Enter your EBS application credentials to continue.</p>
-
-        <div id="alert"></div>
+        <h1 id="login-title">Sign in</h1>
+        <p class="lead">Enter your credentials to continue.</p>
 
         <form id="login-form" novalidate>
           <div class="field">
@@ -87,11 +85,11 @@
           <button type="submit" class="btn btn-primary btn-block">Sign In</button>
         </form>
 
-        <p class="auth-alt">New to EBS Portal? <a href="/signup">Create an account</a></p>
+        <p class="auth-alt">New user? <a href="/signup">Create an account</a></p>
 
         <div class="security-note">
           <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-lock"></use></svg>
-          <span>This is the EBS application sign-in, separate from your Keycloak MFA sign-in.
+          <span>Authorised personnel only. All access is logged and monitored.
             APSRTC will never ask for your password or OTP by phone or email.</span>
         </div>
       </section>
@@ -100,8 +98,8 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <span>&copy; APSRTC EBS Portal &middot; Proof of Concept</span>
-      <span>Protected by Keycloak MFA &amp; OAuth2 Proxy</span>
+      <span>&copy; APSRTC &middot; Andhra Pradesh State Road Transport Corporation</span>
+      <span>Protected by Multi-Factor Authentication</span>
     </div>
   </footer>
 

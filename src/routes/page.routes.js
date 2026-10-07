@@ -36,6 +36,10 @@ router.get('/login', (req, res) => res.redirect(301, '/'));
 router.get('/signup', publicPage('signup.html'));
 router.get('/forgot-password', (req, res) => res.sendFile('forgot-password.html', { root: VIEWS }));
 
+// Behind OAuth2 Proxy this path never reaches the app (the proxy handles /oauth2/*).
+// Without a gateway in front (local development) it just returns to the sign-in page.
+router.get('/oauth2/sign_out', (req, res) => res.redirect(302, '/?reason=loggedout'));
+
 router.get(APP_PAGES, requirePageSession, (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.sendFile('app.html', { root: VIEWS });

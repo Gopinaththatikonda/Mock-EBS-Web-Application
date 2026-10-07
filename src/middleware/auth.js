@@ -40,9 +40,9 @@ async function resolveSession(req) {
 }
 
 const MESSAGES = {
-  UNAUTHENTICATED: 'Please sign in to the EBS portal.',
-  SESSION_EXPIRED: 'Your EBS session has expired. Please sign in again.',
-  SESSION_INVALIDATED: 'Your EBS session is no longer valid. Please sign in again.',
+  UNAUTHENTICATED: 'Please sign in to continue.',
+  SESSION_EXPIRED: 'Your session has expired. Please sign in again.',
+  SESSION_INVALIDATED: 'Your session is no longer valid. Please sign in again.',
 };
 
 // API guard: 401 JSON when there is no valid EBS session.

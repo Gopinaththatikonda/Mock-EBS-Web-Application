@@ -359,3 +359,94 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
   .timeline li::before { display: none; }
   .timeline .dot { left: 8px; top: 3px; }
 }
+
+/* ---------- Toast notifications ---------- */
+.toast-region {
+  position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+  width: min(380px, calc(100vw - 32px));
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  --toast-color: var(--info);
+  position: relative; overflow: hidden; pointer-events: auto;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start;
+  padding: 14px 12px 16px 14px;
+  background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--toast-color);
+  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(16, 24, 40, .16);
+  animation: toast-in .28s ease-out;
+}
+.toast-success { --toast-color: var(--success); }
+.toast-error { --toast-color: var(--danger); }
+.toast-warning { --toast-color: #C27C0E; }
+.toast-info { --toast-color: var(--primary); }
+.toast-icon { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--white); background: var(--toast-color); }
+.toast-icon .icon { width: 16px; height: 16px; }
+.toast-title { font-weight: 600; color: var(--text); }
+.toast-msg { color: var(--text-muted); font-size: 13px; margin-top: 1px; }
+.toast-close { background: none; border: 0; padding: 2px; color: var(--text-muted); cursor: pointer; border-radius: var(--radius); }
+.toast-close:hover { color: var(--text); background: var(--bg); }
+.toast-close .icon { width: 16px; height: 16px; }
+.toast-progress {
+  position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
+  background: var(--toast-color); opacity: .5; transform-origin: left;
+  animation: toast-progress var(--toast-duration, 5000ms) linear forwards;
+}
+.toast.paused .toast-progress { animation-play-state: paused; }
+.toast.leaving { animation: toast-out .25s ease-in forwards; }
+@keyframes toast-in { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to { opacity: 0; transform: translateX(24px); } }
+@keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ---------- Moving bus scene ---------- */
+.bus-scene {
+  position: relative; height: 112px; overflow: hidden;
+  border-radius: var(--radius);
+  background: url("/img/skyline.svg") bottom 30px left 0 / 100% 46px no-repeat, var(--primary-dark);
+}
+.bus-scene .road {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 32px;
+  background: #3A0A0A; border-top: 2px solid #A33A3A;
+}
+.bus-scene .road::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 14px; height: 3px;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 26px, transparent 26px 52px);
+  opacity: .85;
+}
+.bus-scene .bus {
+  position: absolute; bottom: 14px; left: -240px; width: 200px; height: auto;
+  animation: bus-drive 11s linear infinite;
+}
+.bus-scene .bus-body { animation: bus-bob .5s ease-in-out infinite alternate; }
+.bus-scene .wheel { transform-box: fill-box; transform-origin: center; animation: wheel-spin .55s linear infinite; }
+.bus-scene .bus-stop {
+  position: absolute; bottom: 32px; right: 18%; width: 34px; height: 44px; color: #F3DADA; opacity: .55;
+}
+.bus-scene--light { background: url("/img/skyline-light.svg") bottom 26px left 0 / 100% 40px no-repeat, #F1E4E4; height: 96px; }
+.bus-scene--light .road { background: #D9DCE1; border-top-color: #C5CBD3; height: 28px; }
+.bus-scene--light .road::after { top: 12px; }
+.bus-scene--light .bus { bottom: 11px; width: 170px; }
+.bus-scene--light .bus-stop { bottom: 28px; color: var(--primary); }
+.welcome-wrap { padding: 0; border-left: 4px solid var(--primary); overflow: hidden; }
+.welcome-wrap .welcome { border-left: 0; }
+.welcome-wrap .bus-scene { border-radius: 0; }
+
+@keyframes bus-drive { from { left: -240px; } to { left: 100%; } }
+@keyframes bus-bob { from { transform: translateY(0); } to { transform: translateY(-1.5px); } }
+@keyframes wheel-spin { to { transform: rotate(360deg); } }
+
+.auth-info .bus-scene { margin: 0 -36px -36px; border-radius: 0; }
+
+@media (max-width: 1024px) {
+  .auth-info .bus-scene { margin: 0 -24px -24px; height: 96px; }
+  .auth-info .bus-scene .bus { width: 160px; }
+}
+@media (max-width: 640px) {
+  .toast-region { bottom: 8px; right: 8px; left: 8px; width: auto; }
+  .bus-scene--light { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast.leaving, .toast-progress { animation: none; }
+  .bus-scene .bus { animation: none; left: 30%; }
+  .bus-scene .bus-body, .bus-scene .wheel { animation: none; }
+}

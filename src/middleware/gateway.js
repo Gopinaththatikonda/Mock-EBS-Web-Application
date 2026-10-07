@@ -56,7 +56,7 @@ function requireGateway(req, res, next) {
     return res.status(403).json({
       success: false,
       code: 'GATEWAY_GROUP_REQUIRED',
-      message: 'Your account is not authorised for EBS access. Please contact the administrator.',
+      message: 'Your account is not authorised for portal access. Please contact the administrator.',
     });
   }
   next();

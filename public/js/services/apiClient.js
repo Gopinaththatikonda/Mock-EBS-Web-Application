@@ -1,9 +1,9 @@
 // Thin fetch wrapper: same-origin JSON calls, cookie-based EBS session, friendly errors.
 
 const DEFAULT_MESSAGES = {
-  0: 'Unable to reach the EBS server. Please check your connection and try again.',
+  0: 'Unable to reach the server. Please check your connection and try again.',
   400: 'The request could not be processed. Please check the details and try again.',
-  401: 'Your EBS session has expired. Please sign in again.',
+  401: 'Your session has expired. Please sign in again.',
   403: 'You do not have permission to perform this action.',
   404: 'The requested information was not found.',
   409: 'This record already exists.',
@@ -45,7 +45,7 @@ export async function request(method, url, body) {
   }
 
   if (res.type === 'opaqueredirect') {
-    throw new ApiError(401, 'Your secure gateway session has ended. Reload the page to sign in through MFA again.', {
+    throw new ApiError(401, 'Your secure session has ended. Reload the page to sign in again.', {
       code: 'GATEWAY_SESSION_ENDED',
     });
   }

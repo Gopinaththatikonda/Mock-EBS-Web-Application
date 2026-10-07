@@ -1,11 +1,12 @@
 import { authService } from '../services/authService.js';
-import { alertHtml } from '../ui.js';
-import { wirePasswordToggles, setFieldErrors, showAlert } from '../common.js';
+import { busScene } from '../ui.js';
+import { toast } from '../toast.js';
+import { wirePasswordToggles, setFieldErrors } from '../common.js';
 
 const form = document.getElementById('signup-form');
-const alertBox = document.getElementById('alert');
 const submitBtn = form.querySelector('button[type="submit"]');
 
+document.querySelectorAll('[data-bus-scene]').forEach((el) => { el.outerHTML = busScene('dark'); });
 wirePasswordToggles();
 
 // Mirrors the server-side rules for quick feedback. The server remains authoritative.
@@ -51,21 +52,20 @@ form.addEventListener('submit', async (ev) => {
   const errors = validate(v);
   setFieldErrors(form, errors);
   if (Object.keys(errors).length) {
-    showAlert(alertBox, alertHtml('error', 'Please correct the highlighted fields.'));
+    toast.warning('Please correct the highlighted fields.', { title: 'Check your details' });
     return;
   }
 
   submitBtn.disabled = true;
   submitBtn.textContent = 'Creating account…';
-  alertBox.innerHTML = '';
 
   try {
-    const res = await authService.signup(v);
-    showAlert(alertBox, alertHtml('success', `${res.message}. Redirecting to sign in…`));
+    await authService.signup(v);
+    toast.success('Your account has been created. Redirecting to sign in…', { title: 'Registration successful', duration: 2500 });
     form.reset();
-    setTimeout(() => window.location.replace('/?registered=1'), 1500);
+    setTimeout(() => window.location.replace('/?registered=1'), 1600);
   } catch (err) {
-    showAlert(alertBox, alertHtml('error', err.message));
+    toast.error(err.message, { title: err.status === 409 ? 'Already registered' : 'Registration failed' });
     if (err.errors) setFieldErrors(form, err.errors);
     submitBtn.disabled = false;
     submitBtn.textContent = 'Create Account';

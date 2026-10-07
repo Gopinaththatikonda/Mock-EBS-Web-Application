@@ -35,7 +35,7 @@ async function authenticate(identifier, password) {
     throw new AppError(401, 'Invalid username or password', { code: 'INVALID_CREDENTIALS' });
   }
   if (row.status !== 'active') {
-    throw new AppError(403, 'Your EBS account is not active. Please contact the administrator.', {
+    throw new AppError(403, 'Your account is not active. Please contact the administrator.', {
       code: 'ACCOUNT_INACTIVE',
     });
   }

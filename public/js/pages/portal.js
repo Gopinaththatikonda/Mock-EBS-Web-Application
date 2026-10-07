@@ -2,8 +2,9 @@ import { authService } from '../services/authService.js';
 import { userService, demoService } from '../services/userService.js';
 import { onUnauthorized } from '../services/apiClient.js';
 import {
-  esc, icon, badge, tag, panel, dataTable, stateHtml, alertHtml, fmtNumber, fmtDateTime, fmtDate,
+  esc, icon, badge, tag, panel, dataTable, stateHtml, fmtNumber, fmtDateTime, fmtDate, busScene,
 } from '../ui.js';
+import { toast, showFlash } from '../toast.js';
 import { renderMfaBadge } from '../common.js';
 
 const root = document.getElementById('page-root');
@@ -24,13 +25,19 @@ onUnauthorized((err) => {
   window.location.replace(`/?reason=${reason}&next=${encodeURIComponent(route)}`);
 });
 
+// Logout ends ALL sessions: the application session (server), then the OAuth2 Proxy /
+// Keycloak session via the gateway sign-out URL returned by the API.
 document.getElementById('logout-btn').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;
+  toast.info('Signing you out and closing all sessions…', { title: 'Signing out', duration: 3000 });
+  let redirect = '/oauth2/sign_out?rd=%2F';
   try {
-    await authService.logout();
-  } catch (err) { /* session may already be gone; continue to sign-in */ }
-  window.location.replace('/?reason=loggedout');
+    const res = await authService.logout();
+    if (res.redirect && res.redirect.startsWith('/')) redirect = res.redirect;
+  } catch (err) { /* application session may already be gone; still end the gateway session */ }
+  try { sessionStorage.clear(); } catch (err) { /* ignore */ }
+  setTimeout(() => window.location.replace(redirect), 600);
 });
 
 // ---------- Navigation ----------
@@ -51,7 +58,7 @@ document.querySelectorAll('.nav-list a').forEach((a) => {
 function pageHead(title, sub, crumb, extra = '') {
   return `<div class="page-head">
     <div>
-      <div class="breadcrumb">EBS Portal / ${esc(crumb || title)}</div>
+      <div class="breadcrumb">Home / ${esc(crumb || title)}</div>
       <h1 class="page-title">${esc(title)}</h1>
       ${sub ? `<div class="page-sub">${esc(sub)}</div>` : ''}
     </div>${extra}
@@ -81,7 +88,7 @@ function sessionChips() {
   const g = state.gateway;
   return `<div class="chips">
     <span class="chip ${g && g.authenticated ? 'ok' : 'warn'}">${icon('shield')}MFA Gateway: ${g && g.authenticated ? 'Verified' : 'Not detected'}</span>
-    <span class="chip ok">${icon('key')}EBS Session: Active</span>
+    <span class="chip ok">${icon('key')}Session: Active</span>
     <span class="chip">${icon('user')}Role: ${esc(state.user.role === 'admin' ? 'Administrator' : 'User')}</span>
   </div>`;
 }
@@ -89,7 +96,6 @@ function sessionChips() {
 function securityLayers() {
   const g = state.gateway || {};
   const u = state.user;
-  const groups = g.groups && g.groups.length ? g.groups.join(', ') : 'Not forwarded';
   return `<div class="section">
     <h2 class="section-title">Security Layers</h2>
     <div class="grid grid-3">
@@ -105,11 +111,11 @@ function securityLayers() {
       </div>
       <div class="panel layer">
         <div class="layer-head"><span class="layer-icon">${icon('key')}</span>
-          <span><span class="layer-num">Layer 2</span><br><span class="layer-title">EBS Application Session</span></span></div>
+          <span><span class="layer-num">Layer 2</span><br><span class="layer-title">Portal Session</span></span></div>
         <dl class="dl">
           <dt>Status</dt><dd>${badge('Active')}</dd>
-          <dt>EBS user</dt><dd>${esc(u.username)} (${esc(u.employeeId)})</dd>
-          <dt>Verified by</dt><dd>EBS API + PostgreSQL</dd>
+          <dt>User</dt><dd>${esc(u.username)} (${esc(u.employeeId)})</dd>
+          <dt>Verified by</dt><dd>Portal API + secure database</dd>
           <dt>Last sign-in</dt><dd>${esc(fmtDateTime(u.lastLogin))}</dd>
         </dl>
       </div>
@@ -117,9 +123,9 @@ function securityLayers() {
         <div class="layer-head"><span class="layer-icon">${icon('lock')}</span>
           <span><span class="layer-num">Layer 3</span><br><span class="layer-title">Authorisation</span></span></div>
         <dl class="dl">
-          <dt>EBS role</dt><dd>${badge(u.role === 'admin' ? 'Admin' : 'User')}</dd>
-          <dt>Gateway groups</dt><dd>${esc(groups)}</dd>
-          <dt>Required group</dt><dd>EBS_ACCESS (enforced at gateway)</dd>
+          <dt>Role</dt><dd>${badge(u.role === 'admin' ? 'Admin' : 'User')}</dd>
+          <dt>Gateway access</dt><dd>${g.authenticated ? badge('Authorised') : badge('Not detected')}</dd>
+          <dt>Access control</dt><dd>Group and role based</dd>
         </dl>
       </div>
     </div></div>`;
@@ -232,16 +238,19 @@ const PAGES = {
     render() {
       const u = state.user;
       mount(`
-        <div class="section panel welcome">
-          <div><h1>Welcome, ${esc(u.fullName)}</h1>
-          <p>APSRTC EBS Portal &middot; Enterprise Business Suite</p></div>
-          ${sessionChips()}
+        <div class="section panel welcome-wrap">
+          <div class="welcome">
+            <div><h1>Welcome, ${esc(u.fullName)}</h1>
+            <p>Andhra Pradesh State Road Transport Corporation</p></div>
+            ${sessionChips()}
+          </div>
+          ${busScene('light')}
         </div>
         ${securityLayers()}
         <div class="grid grid-2 section">
           <div id="notices"></div>
           ${panel({
-            title: 'Your EBS Account', iconName: 'user', tagKind: 'live',
+            title: 'Your Account', iconName: 'user', tagKind: 'live',
             body: `<div class="panel-body"><dl class="dl">
               <dt>Full name</dt><dd>${esc(u.fullName)}</dd>
               <dt>Employee ID</dt><dd>${esc(u.employeeId)}</dd>
@@ -271,9 +280,12 @@ const PAGES = {
     title: 'Dashboard',
     render() {
       mount(`
-        <div class="section panel welcome">
-          <div><h1>Welcome to APSRTC EBS Portal</h1><p>Enterprise Business Suite</p></div>
-          ${sessionChips()}
+        <div class="section panel welcome-wrap">
+          <div class="welcome">
+            <div><h1>Welcome to APSRTC Portal</h1><p>Andhra Pradesh State Road Transport Corporation</p></div>
+            ${sessionChips()}
+          </div>
+          ${busScene('light')}
         </div>
         <div class="section">
           <h2 class="section-title">Summary ${tag('demo')}</h2>
@@ -377,12 +389,14 @@ const PAGES = {
 
       async function track(no) {
         if (!no) {
-          result.innerHTML = alertHtml('warning', 'Please enter a service number.');
+          toast.warning('Please enter a service number to track.', { title: 'Service number required' });
+          input.focus();
           return;
         }
         result.innerHTML = `<div class="panel">${stateHtml('loading', 'Locating service…')}</div>`;
         try {
           const { service: s, stops } = await demoService.track(no);
+          toast.success(`Service ${s.serviceNo} (${s.route}) is ${s.status.toLowerCase()}.`, { title: 'Service located' });
           result.innerHTML = panel({
             title: `Service ${s.serviceNo}`, iconName: 'bus', tagKind: 'demo',
             tools: badge(s.status),
@@ -394,6 +408,7 @@ const PAGES = {
           });
         } catch (err) {
           if (err.status === 401) return;
+          toast(err.status === 404 ? 'warning' : 'error', err.message, { title: err.status === 404 ? 'Service not found' : 'Tracking failed' });
           result.innerHTML = `<div class="panel">${stateHtml(err.status === 404 ? 'empty' : 'error', err.status === 404 ? 'Service not found' : 'Unable to track this service. Please try again.', err.message)}</div>`;
         }
       }
@@ -424,28 +439,32 @@ const PAGES = {
   '/administration': {
     title: 'Administration',
     render() {
-      mount(`${pageHead('Administration', 'EBS application users and access configuration', 'Administration')}
+      mount(`${pageHead('Administration', 'Registered users and access configuration', 'Administration')}
         <div class="section" id="t-users"></div>
         <div class="section">${panel({
           title: 'Access Control Model', iconName: 'lock',
           body: `<div class="panel-body"><dl class="dl">
-            <dt>Gateway authentication</dt><dd>Keycloak username/password + Google Authenticator TOTP (via OAuth2 Proxy)</dd>
-            <dt>Gateway authorisation</dt><dd>Keycloak group EBS_ACCESS (OAuth2 Proxy --allowed-group)</dd>
-            <dt>EBS authentication</dt><dd>EBS username/Employee ID + password, verified by the EBS API against PostgreSQL (bcrypt)</dd>
-            <dt>EBS authorisation</dt><dd>Role-based (user / admin), enforced by the EBS API</dd>
+            <dt>Multi-factor sign-in</dt><dd>Username/password + Google Authenticator OTP (Keycloak via OAuth2 Proxy)</dd>
+            <dt>Gateway authorisation</dt><dd>Access group membership, enforced at the gateway</dd>
+            <dt>Portal sign-in</dt><dd>Username/Employee ID + password, verified by the portal API (bcrypt, PostgreSQL)</dd>
+            <dt>Portal authorisation</dt><dd>Role-based (user / admin), enforced by the portal API</dd>
+            <dt>Logout</dt><dd>Ends the portal, gateway and Keycloak sessions together</dd>
           </dl></div>`,
         })}</div>`);
 
       dataTable(host('t-users'), {
-        title: 'Registered EBS Users',
+        title: 'Registered Users',
         iconName: 'database',
         tagKind: 'live',
         columns: COLS.ebsUsers,
         pageSize: 10,
         searchable: true,
-        emptyText: 'No EBS users have registered yet.',
-        errorText: 'Unable to load EBS users. Please try again.',
-        fetchPage: (p) => userService.listUsers(p),
+        emptyText: 'No users have registered yet.',
+        errorText: 'Unable to load users. Please try again.',
+        fetchPage: (p) => userService.listUsers(p).catch((err) => {
+          if (err.status === 403) toast.warning('Administration requires the Administrator role.', { title: 'Access restricted' });
+          throw err;
+        }),
       });
     },
   },
@@ -453,13 +472,13 @@ const PAGES = {
   '/profile': {
     title: 'My Profile',
     render() {
-      mount(`${pageHead('My Profile', 'Your EBS account and security session details', 'Profile')}
+      mount(`${pageHead('My Profile', 'Your account and security session details', 'Profile')}
         <div id="profile">${stateHtml('loading', 'Loading profile…')}</div>`);
       userService.getProfile()
         .then(({ user: u, gateway: g, session: s }) => {
           host('profile').innerHTML = `<div class="grid grid-2 section">
             ${panel({
-              title: 'EBS Account', iconName: 'user', tagKind: 'live',
+              title: 'Account Details', iconName: 'user', tagKind: 'live',
               body: `<div class="panel-body"><dl class="dl">
                 <dt>Full name</dt><dd>${esc(u.fullName)}</dd>
                 <dt>Employee ID</dt><dd>${esc(u.employeeId)}</dd>
@@ -473,16 +492,16 @@ const PAGES = {
             })}
             <div class="grid">
               ${panel({
-                title: 'MFA Gateway Identity', iconName: 'shield', tagKind: 'gateway',
+                title: 'Multi-Factor Identity', iconName: 'shield', tagKind: 'gateway',
                 body: `<div class="panel-body"><dl class="dl">
                   <dt>Status</dt><dd>${g.authenticated ? badge('Verified') : badge('Not detected')}</dd>
                   <dt>Username</dt><dd>${esc(g.username || '-')}</dd>
                   <dt>Email</dt><dd>${esc(g.email || '-')}</dd>
-                  <dt>Groups</dt><dd>${esc(g.groups.length ? g.groups.join(', ') : 'Not forwarded')}</dd>
+                  <dt>Access</dt><dd>${g.authenticated ? badge('Authorised') : badge('Not detected')}</dd>
                 </dl></div>`,
               })}
               ${panel({
-                title: 'EBS Session', iconName: 'key',
+                title: 'Portal Session', iconName: 'key',
                 body: `<div class="panel-body"><dl class="dl">
                   <dt>Signed in at</dt><dd>${esc(fmtDateTime(s.loginAt))}</dd>
                   <dt>Session expires</dt><dd>${esc(fmtDateTime(s.expiresAt))} (extends with activity)</dd>
@@ -501,7 +520,7 @@ const PAGES = {
 
 // ---------- Boot ----------
 async function boot() {
-  root.innerHTML = `<div class="panel">${stateHtml('loading', 'Verifying your EBS session…')}</div>`;
+  root.innerHTML = `<div class="panel">${stateHtml('loading', 'Verifying your session…')}</div>`;
   try {
     const [session, gateway] = await Promise.all([authService.session(), userService.getCurrentUser()]);
     if (!session.authenticated) {
@@ -522,8 +541,9 @@ async function boot() {
   renderMfaBadge(document.getElementById('mfa-badge'), state.gateway);
 
   const page = PAGES[route] || PAGES['/home'];
-  document.title = `${page.title} | APSRTC EBS Portal`;
+  document.title = `${page.title} | APSRTC Portal`;
   page.render();
+  showFlash();
 }
 
 boot();

@@ -6,7 +6,9 @@ An APSRTC-inspired **Enterprise Business Suite (EBS) portal** used to demonstrat
 2. **EBS application login**: the portal's own sign-in, verified by a Node.js API against **PostgreSQL** (bcrypt)
 3. **Authorisation**: `EBS_ACCESS` group at the gateway, plus role-based access (`user` / `admin`) in the EBS API
 
-The two sessions are deliberately independent. Passing Keycloak MFA does **not** sign you in to EBS, and signing out of EBS does **not** end the gateway session.
+Passing Keycloak MFA does **not** sign you in to the portal; the portal has its own login. **Logout ends every session**: the portal session, the OAuth2 Proxy session and (with `--backend-logout-url`) the Keycloak session.
+
+The UI is branded "APSRTC" (official emblem in `public/img/apsrtc-logo.png`). It has an animated bus on the sign-in page and dashboard, and toast notifications for every action.
 
 > Business figures (services, depots, employees, reports, grievances) are **illustrative demo data** and are labelled "Demo data" in the UI. They are not live APSRTC records. EBS user accounts are real rows in PostgreSQL.
 
@@ -134,6 +136,7 @@ npm run dev                     # node --watch; migrations run automatically
 | `COOKIE_SECURE`          | `false`        | Set `true` when users reach Nginx over HTTPS                            |
 | `REQUIRE_GATEWAY_AUTH`   | `false`        | `true`: EBS APIs reject requests without OAuth2 Proxy identity headers  |
 | `REQUIRED_GATEWAY_GROUP` | (empty)        | e.g. `EBS_ACCESS`: app-side group check (defence in depth)              |
+| `GATEWAY_LOGOUT_URL`     | `/oauth2/sign_out?rd=%2F` | Where Logout sends the browser to end the gateway/Keycloak sessions |
 | `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` | -  | pgAdmin login                                                           |
 | `EBS_BIND` / `PGADMIN_BIND` | `127.0.0.1` | Host interface for published ports                                     |
 | `POSTGRES_HOST_PORT`     | `5432`         | Host port for PostgreSQL (change if 5432 is already in use)             |
@@ -172,12 +175,26 @@ Enforce the group at the gateway, so users without it never reach the app:
 
 Keycloak needs a **Group Membership** mapper on the client (token claim name `groups`, *Full group path* off) and the users must be members of `EBS_ACCESS`. As an optional second check inside the app, set `REQUIRED_GATEWAY_GROUP=EBS_ACCESS` (and `REQUIRE_GATEWAY_AUTH=true`) in `.env`. No code changes are needed.
 
-### Session separation
+### Sessions and Logout (ends all sessions)
 
-| Layer | Session                     | Created by                              | Ended by                                  |
-|-------|-----------------------------|-----------------------------------------|-------------------------------------------|
-| 1     | `_oauth2_proxy` cookie      | Keycloak password + TOTP                | `/oauth2/sign_out` (OAuth2 Proxy)         |
-| 2     | `ebs.sid` cookie (HTTP-only, server-side in `user_sessions`) | `POST /api/auth/login` | **Logout** button → `POST /api/auth/logout` |
+| Layer | Session                     | Created by                              |
+|-------|-----------------------------|-----------------------------------------|
+| 1     | `_oauth2_proxy` cookie + Keycloak SSO session | Keycloak password + TOTP |
+| 2     | `ebs.sid` cookie (HTTP-only, server-side in `user_sessions`) | `POST /api/auth/login` |
+
+The **Logout** button:
+
+1. calls `POST /api/auth/logout`, which deletes the portal session in PostgreSQL and clears its cookie;
+2. sends the browser to `GATEWAY_LOGOUT_URL` (default `/oauth2/sign_out?rd=%2F`), which clears the OAuth2 Proxy cookie;
+3. OAuth2 Proxy ends the Keycloak session. **This step needs one OAuth2 Proxy setting:**
+
+```text
+--backend-logout-url="https://<keycloak-host>/realms/<realm>/protocol/openid-connect/logout?id_token_hint={id_token}"
+```
+
+(In a config file: `backend_logout_url = "..."`. Requires OAuth2 Proxy v7.5 or later.) Without it, the Keycloak SSO session survives and the next visit skips the Keycloak password/OTP prompt. Afterwards the user lands back on the Keycloak sign-in page.
+
+Without OAuth2 Proxy in front (local development), `/oauth2/sign_out` is answered by the app itself and simply returns to the sign-in page.
 
 The EBS session records the gateway user it was created under. If a different Keycloak user appears in the same browser, the EBS session is invalidated automatically.
 
@@ -190,7 +207,7 @@ The EBS session records the gateway user it was created under. If a different Ke
 | GET    | `/api/user`                | none                | Gateway identity (unchanged top-level fields) + `ebs` session summary |
 | POST   | `/api/auth/signup`         | none (rate-limited) | Register an EBS user (stored in PostgreSQL; no auto sign-in) |
 | POST   | `/api/auth/login`          | none (rate-limited) | `{ "username": "<username or Employee ID>", "password": "..." }` → creates the EBS session |
-| POST   | `/api/auth/logout`         | none                | Clears the EBS session only |
+| POST   | `/api/auth/logout`         | none                | Clears the portal session and returns `redirect` (gateway sign-out URL) |
 | GET    | `/api/auth/session`        | none                | `{ authenticated, user, code }` |
 | GET    | `/api/profile`             | EBS session         | EBS user + gateway identity + session times |
 | GET    | `/api/demo/summary`        | EBS session         | Demo KPIs and notices (`demo: true`) |
@@ -263,7 +280,7 @@ UPDATE users SET role = 'admin' WHERE username = 'testuser';
 5. APSRTC EBS **login page** is shown, with "MFA Protected" and step 1 marked verified.
 6. Create an account: row appears in `users` (check in pgAdmin; `password_hash` starts with `$2b$`).
 7. Sign in with the username or Employee ID: dashboard.
-8. Logout: back on the EBS login page. The gateway session remains (no Keycloak prompt).
+8. Logout: all sessions end and the Keycloak sign-in page appears (password + OTP required again).
 9. Refresh while signed in stays signed in. After logout, `/dashboard` redirects to sign-in.
 10. `docker compose down && docker compose up -d`: users (and active sessions) persist.
 11. `curl http://localhost:8090/health`: HTTP 200.

@@ -53,6 +53,9 @@ const config = {
     // Optional defence-in-depth group check (e.g. EBS_ACCESS). Primary enforcement
     // belongs in OAuth2 Proxy (--allowed-group). Empty = disabled.
     requiredGroup: (process.env.REQUIRED_GATEWAY_GROUP || '').trim(),
+    // Where the browser goes after Logout to end the OAuth2 Proxy (and Keycloak) session too.
+    // OAuth2 Proxy handles /oauth2/sign_out; with --backend-logout-url it also ends the Keycloak session.
+    logoutUrl: process.env.GATEWAY_LOGOUT_URL || '/oauth2/sign_out?rd=%2F',
   },
 
   // Comma-separated proxy list for Express "trust proxy" (client IPs for logs/rate limiting).

@@ -34,7 +34,8 @@ app.get('/health/db', async (req, res) => {
 });
 
 // ---- Static assets (css/js/img only; HTML pages live in /views and are routed below) ----
-app.use(express.static(path.join(__dirname, '..', 'public'), { index: false, maxAge: '1h' }));
+// maxAge 0 = browsers revalidate via ETag, so a redeploy is visible immediately.
+app.use(express.static(path.join(__dirname, '..', 'public'), { index: false, maxAge: 0 }));
 
 // ---- EBS application session (Layer 2) ----
 app.use(express.json({ limit: '10kb' }));

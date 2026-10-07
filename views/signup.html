@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Create Account | APSRTC EBS Portal</title>
-  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <title>Create Account | APSRTC Portal</title>
+  <link rel="icon" href="/img/apsrtc-logo.png" type="image/png">
   <link rel="stylesheet" href="/css/portal.css">
 </head>
 <body class="auth-body">
   <div class="gov-strip">
     <div class="wrap">
-      <span class="gov-name">Andhra Pradesh State Road Transport Corporation</span>
-      <span class="demo-env">EBS MFA POC Environment</span>
+      <span class="gov-name">Employee Services &amp; Operations Portal</span>
+      <span class="demo-env">Secure Access &middot; MFA Enabled</span>
     </div>
   </div>
 
   <header class="site-header">
     <div class="wrap">
       <a class="brand" href="/">
-        <img src="/img/logo.svg" alt="APSRTC">
+        <img src="/img/apsrtc-logo.png" alt="APSRTC emblem" width="56" height="56">
         <span class="brand-text">
-          <span class="brand-title">APSRTC <span>EBS Portal</span></span>
-          <span class="brand-sub">Enterprise Business Suite</span>
+          <span class="brand-title">APSRTC</span>
+          <span class="brand-sub">Andhra Pradesh State Road Transport Corporation</span>
         </span>
       </a>
     </div>
@@ -31,8 +31,8 @@
     <div class="auth-grid signup-grid">
       <aside class="auth-info">
         <div>
-          <h2>EBS Account Registration</h2>
-          <p>Register your EBS application account. Your details are stored securely in the EBS database and your password is never stored in readable form.</p>
+          <h2>Account Registration</h2>
+          <p>Register your portal account. Your details are stored securely and your password is never stored in readable form.</p>
         </div>
         <ol class="steps">
           <li>
@@ -45,17 +45,15 @@
           </li>
           <li>
             <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-dashboard"></use></svg></span>
-            <span><span class="step-title">Access EBS</span><br><span class="step-desc">Modules based on your assigned role</span></span>
+            <span><span class="step-title">Access the portal</span><br><span class="step-desc">Modules based on your assigned role</span></span>
           </li>
         </ol>
-        <p class="fine">MFA (Google Authenticator) is managed separately by the Keycloak gateway.</p>
+        <div data-bus-scene></div>
       </aside>
 
       <section class="auth-form" aria-labelledby="signup-title">
-        <h1 id="signup-title">Create EBS Account</h1>
+        <h1 id="signup-title">Create Account</h1>
         <p class="lead">All fields are mandatory.</p>
-
-        <div id="alert"></div>
 
         <form id="signup-form" novalidate>
           <div class="form-grid">
@@ -112,8 +110,8 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <span>&copy; APSRTC EBS Portal &middot; Proof of Concept</span>
-      <span>Protected by Keycloak MFA &amp; OAuth2 Proxy</span>
+      <span>&copy; APSRTC &middot; Andhra Pradesh State Road Transport Corporation</span>
+      <span>Protected by Multi-Factor Authentication</span>
     </div>
   </footer>
 
