@@ -1,6 +1,6 @@
 import { authService } from '../services/authService.js';
 import { userService } from '../services/userService.js';
-import { busScene } from '../ui.js';
+import { initLanding, buttonLoading, buttonReset, buttonSuccess, shake } from '../landing.js';
 import { toast, flash, showFlash } from '../toast.js';
 import { renderMfaBadge, wirePasswordToggles, setFieldErrors, safeNext } from '../common.js';
 
@@ -8,7 +8,8 @@ const form = document.getElementById('login-form');
 const submitBtn = form.querySelector('button[type="submit"]');
 const params = new URLSearchParams(window.location.search);
 
-document.querySelectorAll('[data-bus-scene]').forEach((el) => { el.outerHTML = busScene('dark'); });
+initLanding();
+const card = document.querySelector('.auth-form');
 
 // Notices from redirects, shown as toasts; then tidy the URL.
 const NOTICES = {
@@ -53,23 +54,24 @@ form.addEventListener('submit', async (e) => {
   setFieldErrors(form, errors);
   if (Object.keys(errors).length) {
     toast.warning('Please enter your username and password.', { title: 'Details required' });
+    shake(card);
     return;
   }
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Signing in…';
+  buttonLoading(submitBtn, 'Signing in…');
 
   try {
     const { user } = await authService.login(username, password);
     flash('success', `Welcome back, ${user.fullName}. You have signed in successfully.`, { title: 'Signed in' });
-    window.location.replace(safeNext(params.get('next')));
+    buttonSuccess(submitBtn, 'Signed in');
+    setTimeout(() => window.location.replace(safeNext(params.get('next'))), 650);
   } catch (err) {
     const title = err.status === 429 ? 'Too many attempts' : err.status === 401 ? 'Sign-in failed' : undefined;
     toast.error(err.message, { title });
+    shake(card);
     if (err.errors) setFieldErrors(form, err.errors);
     form.password.value = '';
     form.password.focus();
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Sign In';
+    buttonReset(submitBtn);
   }
 });

@@ -1,13 +1,30 @@
 import { authService } from '../services/authService.js';
-import { busScene } from '../ui.js';
+import { initLanding, buttonLoading, buttonReset, buttonSuccess, shake } from '../landing.js';
 import { toast } from '../toast.js';
 import { wirePasswordToggles, setFieldErrors } from '../common.js';
 
 const form = document.getElementById('signup-form');
 const submitBtn = form.querySelector('button[type="submit"]');
 
-document.querySelectorAll('[data-bus-scene]').forEach((el) => { el.outerHTML = busScene('dark'); });
+initLanding();
 wirePasswordToggles();
+const card = document.querySelector('.auth-form');
+
+// Animated password strength meter.
+const meter = document.getElementById('strength');
+const meterLabel = document.getElementById('strength-label');
+const LEVELS = ['Minimum 8 characters, with a letter and a number', 'Weak', 'Fair', 'Good', 'Strong'];
+form.elements.password.addEventListener('input', (e) => {
+  const p = e.target.value;
+  let score = 0;
+  if (p.length >= 8) score++;
+  if (/[A-Za-z]/.test(p) && /\d/.test(p)) score++;
+  if (/[a-z]/.test(p) && /[A-Z]/.test(p)) score++;
+  if (/[^A-Za-z0-9]/.test(p) || p.length >= 12) score++;
+  if (!p) score = 0;
+  meter.dataset.level = String(score);
+  meterLabel.textContent = p ? `Password strength: ${LEVELS[score] || LEVELS[1]}` : LEVELS[0];
+});
 
 // Mirrors the server-side rules for quick feedback. The server remains authoritative.
 function validate(v) {
@@ -53,21 +70,23 @@ form.addEventListener('submit', async (ev) => {
   setFieldErrors(form, errors);
   if (Object.keys(errors).length) {
     toast.warning('Please correct the highlighted fields.', { title: 'Check your details' });
+    shake(card);
     return;
   }
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Creating account…';
+  buttonLoading(submitBtn, 'Creating account…');
 
   try {
     await authService.signup(v);
     toast.success('Your account has been created. Redirecting to sign in…', { title: 'Registration successful', duration: 2500 });
+    buttonSuccess(submitBtn, 'Account created');
     form.reset();
+    meter.dataset.level = '0';
     setTimeout(() => window.location.replace('/?registered=1'), 1600);
   } catch (err) {
     toast.error(err.message, { title: err.status === 409 ? 'Already registered' : 'Registration failed' });
     if (err.errors) setFieldErrors(form, err.errors);
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Create Account';
+    shake(card);
+    buttonReset(submitBtn);
   }
 });

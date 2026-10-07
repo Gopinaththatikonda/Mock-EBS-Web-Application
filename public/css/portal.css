@@ -450,3 +450,56 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
   .bus-scene .bus { animation: none; left: 30%; }
   .bus-scene .bus-body, .bus-scene .wheel { animation: none; }
 }
+
+/* ---------- Bus scene: second lane, sky, exhaust ---------- */
+.bus-scene .bus-rev-wrap { position: absolute; inset: 0; transform: scaleX(-1); pointer-events: none; }
+.bus-scene .bus-rev { bottom: 24px; width: 140px; opacity: .9; animation-duration: 16s; animation-delay: -7s; }
+.bus-scene--light .bus-rev { bottom: 19px; width: 120px; }
+.bus-scene .bus-main { z-index: 2; }
+
+.bus-scene .puffs circle {
+  fill: rgba(255, 255, 255, .55); opacity: 0;
+  transform-box: fill-box; transform-origin: center;
+  animation: puff 1.2s ease-out infinite;
+}
+.bus-scene .puffs circle:nth-child(2) { animation-delay: .4s; }
+.bus-scene .puffs circle:nth-child(3) { animation-delay: .8s; }
+.bus-scene--light .puffs circle { fill: rgba(95, 102, 114, .35); }
+@keyframes puff {
+  0% { opacity: .65; transform: translate(0, 0) scale(.6); }
+  100% { opacity: 0; transform: translate(-16px, -9px) scale(2.4); }
+}
+
+.bus-scene .sun {
+  position: absolute; top: 12px; right: 11%; width: 36px; height: 36px; border-radius: 50%;
+  background: radial-gradient(circle, #FFE9A8 0 42%, rgba(242, 193, 78, .5) 44% 58%, rgba(242, 193, 78, 0) 70%);
+  animation: sun-glow 4s ease-in-out infinite alternate;
+}
+@keyframes sun-glow { from { transform: scale(1); opacity: .8; } to { transform: scale(1.14); opacity: 1; } }
+
+.bus-scene .cloud {
+  position: absolute; left: -90px; width: 48px; height: 13px; border-radius: 13px;
+  background: rgba(255, 255, 255, .14);
+  animation: cloud-drift 40s linear infinite;
+}
+.bus-scene .cloud::before, .bus-scene .cloud::after { content: ""; position: absolute; background: inherit; border-radius: 50%; }
+.bus-scene .cloud::before { width: 20px; height: 20px; left: 8px; top: -10px; }
+.bus-scene .cloud::after { width: 15px; height: 15px; left: 24px; top: -6px; }
+.bus-scene .cloud-1 { top: 22px; animation-delay: -6s; }
+.bus-scene .cloud-2 { top: 40px; width: 66px; animation-duration: 58s; animation-delay: -32s; }
+.bus-scene .cloud-3 { top: 12px; width: 38px; animation-duration: 47s; animation-delay: -20s; }
+.bus-scene--light .cloud { background: rgba(255, 255, 255, .95); }
+@keyframes cloud-drift { from { left: -90px; } to { left: 100%; } }
+
+.auth-info .bus-scene { height: 150px; }
+.auth-info .bus-scene .road { height: 38px; }
+.auth-info .bus-scene .road::after { top: 17px; }
+.auth-info .bus-scene .bus-main { bottom: 10px; }
+.auth-info .bus-scene .bus-rev { bottom: 27px; }
+.auth-info .bus-scene .bus-stop { bottom: 38px; }
+.auth-info .bus-scene { background-position: bottom 36px left 0, 0 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bus-scene .puffs circle, .bus-scene .sun, .bus-scene .cloud { animation: none; }
+  .bus-scene .bus-rev { left: 60%; }
+}

@@ -6,19 +6,24 @@
   <title>Create Account | APSRTC Portal</title>
   <link rel="icon" href="/img/apsrtc-logo.png" type="image/png">
   <link rel="stylesheet" href="/css/portal.css">
+  <link rel="stylesheet" href="/css/landing.css">
 </head>
 <body class="auth-body">
   <div class="gov-strip">
     <div class="wrap">
       <span class="gov-name">Employee Services &amp; Operations Portal</span>
-      <span class="demo-env">Secure Access &middot; MFA Enabled</span>
+      <span class="strip-right">
+        <span class="live-clock" id="live-clock"><span class="live-dot" aria-hidden="true"></span><span data-time>&nbsp;</span></span>
+        <span class="demo-env">Secure Access &middot; MFA Enabled</span>
+      </span>
     </div>
   </div>
+
 
   <header class="site-header">
     <div class="wrap">
       <a class="brand" href="/">
-        <img src="/img/apsrtc-logo.png" alt="APSRTC emblem" width="56" height="56">
+        <span class="logo-wrap"><img src="/img/apsrtc-logo.png" alt="APSRTC emblem" width="56" height="56"></span>
         <span class="brand-text">
           <span class="brand-title">APSRTC</span>
           <span class="brand-sub">Andhra Pradesh State Road Transport Corporation</span>
@@ -27,23 +32,44 @@
     </div>
   </header>
 
+  <div class="ticker" role="region" aria-label="Announcements">
+    <span class="ticker-label"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-bell"></use></svg><span>Announcements</span></span>
+    <div class="ticker-track">
+      <div class="ticker-content">
+        <span>Dasara special services operating from all major depots</span>
+        <span>Multi-factor authentication is now mandatory for all employees</span>
+        <span>New Garuda services: Vijayawada &ndash; Hyderabad, every 30 minutes</span>
+        <span>Track any service live from the portal after sign-in</span>
+        <span>Online grievance registration and status tracking now available</span>
+        <span>Safety first: Zero-accident drive across all depots this month</span>
+      </div>
+    </div>
+  </div>
+
   <main class="auth-main">
     <div class="auth-grid signup-grid">
       <aside class="auth-info">
-        <div>
-          <h2>Account Registration</h2>
+        <div class="reveal-left d2">
+          <h2 class="title-shine">Account Registration</h2>
           <p>Register your portal account. Your details are stored securely and your password is never stored in readable form.</p>
         </div>
+        <div class="network-card reveal d3">
+          <div class="network-head">
+            <span><span class="live-dot" aria-hidden="true"></span> APSRTC Network &middot; Live</span>
+            <span class="network-note">Indicative routes for demonstration</span>
+          </div>
+          <div data-route-map></div>
+        </div>
         <ol class="steps">
-          <li>
+          <li class="reveal-left d4">
             <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-user"></use></svg></span>
             <span><span class="step-title">Register</span><br><span class="step-desc">Provide your employee details</span></span>
           </li>
-          <li>
+          <li class="reveal-left d4">
             <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-key"></use></svg></span>
             <span><span class="step-title">Sign in</span><br><span class="step-desc">Use your username or Employee ID</span></span>
           </li>
-          <li>
+          <li class="reveal-left d5">
             <span class="step-icon"><svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-dashboard"></use></svg></span>
             <span><span class="step-title">Access the portal</span><br><span class="step-desc">Modules based on your assigned role</span></span>
           </li>
@@ -52,11 +78,11 @@
       </aside>
 
       <section class="auth-form" aria-labelledby="signup-title">
-        <h1 id="signup-title">Create Account</h1>
-        <p class="lead">All fields are mandatory.</p>
+        <h1 id="signup-title" class="reveal-right d2">Create Account</h1>
+        <p class="lead reveal-right d3">All fields are mandatory.</p>
 
         <form id="signup-form" novalidate>
-          <div class="form-grid">
+          <div class="form-grid reveal d4">
             <div class="field span-2">
               <label for="fullName">Full Name <span class="req">*</span></label>
               <input id="fullName" name="fullName" type="text" autocomplete="name" maxlength="100" required autofocus>
@@ -91,7 +117,8 @@
                   <svg class="icon" aria-hidden="true"><use href="/img/icons.svg#i-eye"></use></svg>
                 </button>
               </div>
-              <div class="hint">Minimum 8 characters, with a letter and a number</div>
+              <div class="strength" id="strength" data-level="0" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+              <div class="strength-label" id="strength-label" aria-live="polite">Minimum 8 characters, with a letter and a number</div>
               <div class="error" id="password-error"></div>
             </div>
             <div class="field">
@@ -100,10 +127,10 @@
               <div class="error" id="confirmPassword-error"></div>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+          <button type="submit" class="btn btn-primary btn-block btn-shine reveal d6">Create Account</button>
         </form>
 
-        <p class="auth-alt">Already have an account? <a href="/">Sign in</a></p>
+        <p class="auth-alt reveal d7">Already have an account? <a href="/">Sign in</a></p>
       </section>
     </div>
   </main>

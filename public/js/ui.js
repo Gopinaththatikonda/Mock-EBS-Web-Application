@@ -142,17 +142,15 @@ export function dataTable(host, { title, iconName, tagKind = 'demo', columns, fe
   return { reload: load };
 }
 
-// Decorative road scene with a moving APSRTC bus (CSS animated; respects reduced motion).
-export function busScene(variant = 'dark') {
-  return `<div class="bus-scene${variant === 'light' ? ' bus-scene--light' : ''}" aria-hidden="true">
-    <svg class="bus-stop" viewBox="0 0 34 44" focusable="false"><rect x="15" y="10" width="3" height="34" fill="currentColor"/><rect x="5" y="0" width="23" height="14" rx="2" fill="currentColor"/></svg>
-    <div class="road"></div>
-    <svg class="bus" viewBox="0 0 200 80" focusable="false">
+// APSRTC bus drawing (faces right). label=false for mirrored buses.
+function busSvg(cls, label = true) {
+  return `<svg class="${cls}" viewBox="0 0 200 80" focusable="false">
+      <g class="puffs"><circle cx="2" cy="58" r="3"/><circle cx="2" cy="58" r="3"/><circle cx="2" cy="58" r="3"/></g>
       <g class="bus-body">
         <rect x="4" y="8" width="186" height="56" rx="8" fill="#FFFFFF"/>
         <rect x="4" y="8" width="186" height="11" rx="7" fill="#8B0000"/>
         <rect x="148" y="10" width="36" height="7.5" rx="1.5" fill="#222222"/>
-        <text x="166" y="16.2" font-size="5.6" text-anchor="middle" fill="#F2C14E" font-family="Arial, sans-serif" font-weight="700">APSRTC</text>
+        ${label ? '<text x="166" y="16.2" font-size="5.6" text-anchor="middle" fill="#F2C14E" font-family="Arial, sans-serif" font-weight="700">APSRTC</text>' : ''}
         <rect x="12" y="22" width="21" height="18" rx="2" fill="#2B3A4A"/>
         <rect x="37" y="22" width="21" height="18" rx="2" fill="#2B3A4A"/>
         <rect x="62" y="22" width="21" height="18" rx="2" fill="#2B3A4A"/>
@@ -160,16 +158,28 @@ export function busScene(variant = 'dark') {
         <rect x="112" y="22" width="21" height="18" rx="2" fill="#2B3A4A"/>
         <rect x="137" y="22" width="13" height="37" rx="2" fill="#2B3A4A"/>
         <rect x="154" y="22" width="32" height="21" rx="3" fill="#2B3A4A"/>
+        <path class="glare" d="M156 24h8l-6 17h-6z" fill="#FFFFFF" fill-opacity="0.18"/>
         <rect x="4" y="44" width="133" height="6" fill="#8B0000"/>
         <rect x="150" y="46" width="40" height="6" fill="#8B0000"/>
         <rect x="4" y="50" width="133" height="2.5" fill="#F2C14E"/>
         <rect x="150" y="52" width="40" height="2.5" fill="#F2C14E"/>
-        <rect x="183" y="56" width="7" height="4" rx="1" fill="#F2C14E"/>
+        <rect class="headlight" x="183" y="56" width="7" height="4" rx="1" fill="#F2C14E"/>
         <rect x="4" y="55" width="4" height="5" rx="1" fill="#B22222"/>
         <rect x="4" y="60" width="186" height="4" rx="2" fill="#4B5563"/>
       </g>
       <g class="wheel"><circle cx="42" cy="64" r="11" fill="#1F1F1F"/><circle cx="42" cy="64" r="5" fill="#BFC4CA"/><path d="M42 55v18M33 64h18" stroke="#6B7280" stroke-width="1.6"/></g>
       <g class="wheel"><circle cx="160" cy="64" r="11" fill="#1F1F1F"/><circle cx="160" cy="64" r="5" fill="#BFC4CA"/><path d="M160 55v18M151 64h18" stroke="#6B7280" stroke-width="1.6"/></g>
-    </svg>
+    </svg>`;
+}
+
+// Animated road scene: sun, drifting clouds, skyline, bus stop and two buses in opposite lanes.
+export function busScene(variant = 'dark') {
+  return `<div class="bus-scene${variant === 'light' ? ' bus-scene--light' : ''}" aria-hidden="true">
+    <span class="sun"></span>
+    <span class="cloud cloud-1"></span><span class="cloud cloud-2"></span><span class="cloud cloud-3"></span>
+    <svg class="bus-stop" viewBox="0 0 34 44" focusable="false"><rect x="15" y="10" width="3" height="34" fill="currentColor"/><rect x="5" y="0" width="23" height="14" rx="2" fill="currentColor"/></svg>
+    <div class="road"></div>
+    <div class="bus-rev-wrap">${busSvg('bus bus-rev', false)}</div>
+    ${busSvg('bus bus-main')}
   </div>`;
 }
