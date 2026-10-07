@@ -49,7 +49,19 @@ app.get('/api/user', (req, res) => {
   res.json(getUser(req));
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Frontend pages. The demo signup/login (localStorage) and route guarding happen in the
+// browser; real authentication is enforced upstream by OAuth2 Proxy + Keycloak.
+const PUBLIC_DIR = path.join(__dirname, 'public');
+
+app.get('/signup', (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'signup.html'));
+});
+
+app.get(['/dashboard', '/accounts', '/transactions', '/profile'], (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, 'app.html'));
+});
+
+app.use(express.static(PUBLIC_DIR));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', path: req.originalUrl });

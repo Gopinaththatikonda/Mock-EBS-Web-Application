@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EBS - Enterprise Banking System</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/auth.js"></script>
+  <script>EBS.requireSession();</script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">EBS</span>
+      <span class="brand-name">Enterprise Banking System</span>
+    </div>
+    <div class="topbar-right">
+      <span class="user-chip" id="user-chip">&nbsp;</span>
+      <button type="button" class="btn btn-logout" id="logout" title="Sign out of the EBS demo application">Logout</button>
+      <a class="btn btn-ghost" id="sso-logout" href="/oauth2/sign_out" title="Clear the OAuth2 Proxy session (SSO sign-out)">SSO Sign Out</a>
+    </div>
+  </header>
+
+  <nav class="navbar">
+    <a href="/dashboard" data-page="dashboard">Dashboard</a>
+    <a href="/accounts" data-page="accounts">Accounts</a>
+    <a href="/transactions" data-page="transactions">Transactions</a>
+    <a href="/profile" data-page="profile">Profile</a>
+  </nav>
+
+  <main class="container">
+    <div class="banner" id="banner">Checking authentication&hellip;</div>
+
+    <!-- Dashboard -->
+    <section data-page="dashboard" hidden>
+      <h1>Welcome, <span class="js-username"></span></h1>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Authentication</h2>
+          <dl>
+            <dt>Status</dt><dd class="js-auth-status">&hellip;</dd>
+            <dt>MFA</dt><dd class="js-mfa-status">&hellip;</dd>
+            <dt>Provider</dt><dd>Keycloak via OAuth2 Proxy</dd>
+          </dl>
+        </div>
+
+        <div class="card">
+          <h2>User Information</h2>
+          <dl>
+            <dt>Name</dt><dd class="js-name"></dd>
+            <dt>Email</dt><dd class="js-email"></dd>
+            <dt>Username</dt><dd class="js-username"></dd>
+          </dl>
+        </div>
+
+        <div class="card">
+          <h2>SSO Identity (OAuth2 Proxy)</h2>
+          <dl>
+            <dt>Username</dt><dd class="js-sso-username">&hellip;</dd>
+            <dt>Email</dt><dd class="js-sso-email">&hellip;</dd>
+          </dl>
+        </div>
+
+        <div class="card">
+          <h2>System Status</h2>
+          <dl>
+            <dt>Application</dt><dd class="js-sys-app">&hellip;</dd>
+            <dt>OAuth2 Proxy</dt><dd class="js-sys-oauth2">&hellip;</dd>
+            <dt>Keycloak</dt><dd class="js-sys-keycloak">&hellip;</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- Accounts -->
+    <section data-page="accounts" hidden>
+      <h1>Accounts</h1>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Account</th><th>Type</th><th>Status</th><th class="num">Balance</th></tr></thead>
+          <tbody>
+            <tr><td>XXXX-XXXX-4521</td><td>Current Account</td><td><span class="ok">Active</span></td><td class="num">$ 248,310.55</td></tr>
+            <tr><td>XXXX-XXXX-7788</td><td>Savings Account</td><td><span class="ok">Active</span></td><td class="num">$ 92,004.10</td></tr>
+            <tr><td>XXXX-XXXX-1093</td><td>Fixed Deposit</td><td><span class="ok">Active</span></td><td class="num">$ 150,000.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Transactions -->
+    <section data-page="transactions" hidden>
+      <h1>Transactions</h1>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Date</th><th>Description</th><th>Account</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            <tr><td>2026-10-06</td><td>Vendor payment - ACME Corp</td><td>XXXX-4521</td><td class="num fail">- $ 12,450.00</td></tr>
+            <tr><td>2026-10-05</td><td>Customer receipt - INV-20931</td><td>XXXX-4521</td><td class="num ok">+ $ 38,200.00</td></tr>
+            <tr><td>2026-10-03</td><td>Transfer to savings</td><td>XXXX-7788</td><td class="num ok">+ $ 5,000.00</td></tr>
+            <tr><td>2026-10-01</td><td>Payroll batch - September</td><td>XXXX-4521</td><td class="num fail">- $ 64,880.25</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Profile -->
+    <section data-page="profile" hidden>
+      <h1>Profile</h1>
+      <div class="grid">
+        <div class="card">
+          <h2>Application Account (demo)</h2>
+          <dl>
+            <dt>Name</dt><dd class="js-name"></dd>
+            <dt>Email</dt><dd class="js-email"></dd>
+            <dt>Username</dt><dd class="js-username"></dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h2>SSO Identity (OAuth2 Proxy)</h2>
+          <dl>
+            <dt>Status</dt><dd class="js-auth-status">&hellip;</dd>
+            <dt>MFA</dt><dd class="js-mfa-status">&hellip;</dd>
+            <dt>Username</dt><dd class="js-sso-username">&hellip;</dd>
+            <dt>Email</dt><dd class="js-sso-email">&hellip;</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <p class="note">
+      This is a Mock EBS application used for MFA/OAuth2 testing. The application sign-in is a demo stored in
+      browser localStorage; the real authentication boundary is Nginx &rarr; OAuth2 Proxy &rarr; Keycloak (+ MFA).
+      <strong>Logout</strong> ends the demo application session only; <strong>SSO Sign Out</strong> also clears the OAuth2 Proxy session.
+    </p>
+  </main>
+
+  <footer class="footer">&copy; Mock EBS &middot; POC environment</footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

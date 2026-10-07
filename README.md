@@ -2,7 +2,9 @@
 
 A minimal Node.js/Express application that imitates an "EBS Enterprise Banking System" dashboard. It exists only to test an **OAuth2 Proxy + Keycloak MFA** authentication flow.
 
-The app has **no** login page, password handling, MFA logic, or database. All authentication is done upstream by Keycloak and OAuth2 Proxy; the app only displays the identity headers that OAuth2 Proxy forwards.
+Real authentication (SSO + MFA) is done entirely upstream by Keycloak and OAuth2 Proxy; the app displays the identity headers that OAuth2 Proxy forwards. There is no database.
+
+On top of that, the frontend includes a **demo-only** application Signup/Login flow backed by browser `localStorage` (see [Demo application login](#demo-application-login-localstorage)). It is purely for UI demonstration and is not an authentication boundary.
 
 ## Architecture
 
@@ -73,11 +75,43 @@ Example: `PORT=8081 NODE_ENV=production npm start`
 
 ## Routes
 
-| Route       | Description                                                         |
-|-------------|---------------------------------------------------------------------|
-| `/`         | Mock EBS dashboard (user info, auth/MFA status, system status)      |
-| `/health`   | Health check: `{"status":"ok","service":"mock-ebs","port":8081}`    |
-| `/api/user` | Identity read from OAuth2 Proxy headers                             |
+| Route           | Description                                                              |
+|-----------------|--------------------------------------------------------------------------|
+| `/`             | EBS Sign In page (demo login)                                            |
+| `/signup`       | EBS Sign Up page (demo account creation)                                 |
+| `/dashboard`    | Dashboard: auth/MFA status, user info, SSO identity, system status       |
+| `/accounts`     | Mock accounts list                                                       |
+| `/transactions` | Mock transactions list                                                   |
+| `/profile`      | Demo account + SSO identity                                              |
+| `/health`       | Health check: `{"status":"ok","service":"mock-ebs","port":8081}`         |
+| `/api/user`     | Identity read from OAuth2 Proxy headers                                  |
+
+`/dashboard`, `/accounts`, `/transactions` and `/profile` redirect to `/` in the browser when there is no demo login.
+
+## Demo application login (localStorage)
+
+> **DEMO ONLY.** Accounts, including passwords in plain text, are stored in the browser's `localStorage`. Do not use real passwords, and do not treat this as authentication. The real boundary is
+> `Browser → Nginx → OAuth2 Proxy → Keycloak → Google Authenticator MFA → Mock EBS`.
+
+Flow: **Sign Up** (`/signup`) → redirected to **Sign In** (`/`, no auto-login) → **Dashboard** (`/dashboard`).
+
+| localStorage key      | Contents                                                           |
+|-----------------------|--------------------------------------------------------------------|
+| `ebs_users`           | Array of `{ name, username, email, password }` (multiple users)    |
+| `ebs_logged_in_user`  | Current demo session `{ name, username, email }` (no password)     |
+
+- Signup validates required fields, email format, username format, password length (8+) and confirmation, and rejects duplicate usernames/emails (case-insensitive).
+- Login accepts username **or** email and shows `Invalid username/email or password` on failure.
+- The dashboard still calls `/api/user` and shows the OAuth2 Proxy (Keycloak) identity and MFA status alongside the demo user.
+
+Two sign-out buttons are shown in the header:
+
+| Button           | Effect                                                                                         |
+|------------------|------------------------------------------------------------------------------------------------|
+| **Logout**       | Removes `ebs_logged_in_user` and returns to `/`. The OAuth2 Proxy / Keycloak session is kept.   |
+| **SSO Sign Out** | Removes `ebs_logged_in_user`, then goes to `/oauth2/sign_out` (handled by OAuth2 Proxy).        |
+
+Data is per browser/origin: users created in one browser are not visible in another. To reset, clear site data or run `localStorage.clear()` in the browser console.
 
 ## Test
 
@@ -120,7 +154,7 @@ Headers read by the app (first match wins):
 - **username**: `X-Auth-Request-Preferred-Username`, `X-Forwarded-Preferred-Username`, `X-Auth-Request-User`, `X-Forwarded-User`
 - **email**: `X-Auth-Request-Email`, `X-Forwarded-Email`
 
-The **Logout** button links to `/oauth2/sign_out`, which is handled by OAuth2 Proxy (configure `--whitelist-domain` / Keycloak `end_session_endpoint` redirect if you also want to end the Keycloak session).
+The **SSO Sign Out** button links to `/oauth2/sign_out`, which is handled by OAuth2 Proxy (configure `--whitelist-domain` / Keycloak `end_session_endpoint` redirect if you also want to end the Keycloak session).
 
 MFA itself is enforced by the Keycloak authentication flow (e.g. OTP required). The dashboard shows MFA as "Verified" whenever OAuth2 Proxy forwards an authenticated user, because a user cannot reach the app without completing the Keycloak flow.
 
