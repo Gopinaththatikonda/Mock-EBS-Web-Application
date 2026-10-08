@@ -5,12 +5,11 @@ import {
   esc, icon, badge, tag, panel, dataTable, stateHtml, fmtNumber, fmtDateTime, fmtDate, busScene,
 } from '../ui.js';
 import { toast, showFlash } from '../toast.js';
-import { renderMfaBadge } from '../common.js';
 
 const root = document.getElementById('page-root');
 const route = window.location.pathname.replace(/\/+$/, '') || '/home';
 
-const state = { user: null, gateway: null };
+const state = { user: null };
 
 // ---------- Session handling ----------
 let redirecting = false;
@@ -30,7 +29,7 @@ onUnauthorized((err) => {
 document.getElementById('logout-btn').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;
-  toast.info('Signing you out and closing all sessions…', { title: 'Signing out', duration: 3000 });
+  toast.info('Signing you out…', { title: 'Signing out', duration: 3000 });
   let redirect = '/oauth2/sign_out?rd=%2F';
   try {
     const res = await authService.logout();
@@ -84,51 +83,9 @@ function quickAccess() {
     </div></div>`;
 }
 
-function sessionChips() {
-  const g = state.gateway;
-  return `<div class="chips">
-    <span class="chip ${g && g.authenticated ? 'ok' : 'warn'}">${icon('shield')}MFA Gateway: ${g && g.authenticated ? 'Verified' : 'Not detected'}</span>
-    <span class="chip ok">${icon('key')}Session: Active</span>
-    <span class="chip">${icon('user')}Role: ${esc(state.user.role === 'admin' ? 'Administrator' : 'User')}</span>
-  </div>`;
-}
-
-function securityLayers() {
-  const g = state.gateway || {};
-  const u = state.user;
-  return `<div class="section">
-    <h2 class="section-title">Security Layers</h2>
-    <div class="grid grid-3">
-      <div class="panel layer">
-        <div class="layer-head"><span class="layer-icon">${icon('shield')}</span>
-          <span><span class="layer-num">Layer 1</span><br><span class="layer-title">MFA Gateway</span></span></div>
-        <dl class="dl">
-          <dt>Status</dt><dd>${g.authenticated ? badge('Verified') : badge('Not detected')}</dd>
-          <dt>Identity</dt><dd>${esc(g.email || g.username || '-')}</dd>
-          <dt>Managed by</dt><dd>Keycloak + OAuth2 Proxy</dd>
-          <dt>Factors</dt><dd>Password + Google Authenticator</dd>
-        </dl>
-      </div>
-      <div class="panel layer">
-        <div class="layer-head"><span class="layer-icon">${icon('key')}</span>
-          <span><span class="layer-num">Layer 2</span><br><span class="layer-title">Portal Session</span></span></div>
-        <dl class="dl">
-          <dt>Status</dt><dd>${badge('Active')}</dd>
-          <dt>User</dt><dd>${esc(u.username)} (${esc(u.employeeId)})</dd>
-          <dt>Verified by</dt><dd>Portal API + secure database</dd>
-          <dt>Last sign-in</dt><dd>${esc(fmtDateTime(u.lastLogin))}</dd>
-        </dl>
-      </div>
-      <div class="panel layer">
-        <div class="layer-head"><span class="layer-icon">${icon('lock')}</span>
-          <span><span class="layer-num">Layer 3</span><br><span class="layer-title">Authorisation</span></span></div>
-        <dl class="dl">
-          <dt>Role</dt><dd>${badge(u.role === 'admin' ? 'Admin' : 'User')}</dd>
-          <dt>Gateway access</dt><dd>${g.authenticated ? badge('Authorised') : badge('Not detected')}</dd>
-          <dt>Access control</dt><dd>Group and role based</dd>
-        </dl>
-      </div>
-    </div></div>`;
+function todayChip() {
+  const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+  return `<div class="chips"><span class="chip">${icon('clock')}${esc(today)}</span></div>`;
 }
 
 function mount(html) {
@@ -242,11 +199,11 @@ const PAGES = {
           <div class="welcome">
             <div><h1>Welcome, ${esc(u.fullName)}</h1>
             <p>Andhra Pradesh State Road Transport Corporation</p></div>
-            ${sessionChips()}
+            ${todayChip()}
           </div>
           ${busScene('light')}
         </div>
-        ${securityLayers()}
+        ${quickAccess()}
         <div class="grid grid-2 section">
           <div id="notices"></div>
           ${panel({
@@ -283,7 +240,7 @@ const PAGES = {
         <div class="section panel welcome-wrap">
           <div class="welcome">
             <div><h1>Welcome to APSRTC Portal</h1><p>Andhra Pradesh State Road Transport Corporation</p></div>
-            ${sessionChips()}
+            ${todayChip()}
           </div>
           ${busScene('light')}
         </div>
@@ -439,18 +396,8 @@ const PAGES = {
   '/administration': {
     title: 'Administration',
     render() {
-      mount(`${pageHead('Administration', 'Registered users and access configuration', 'Administration')}
-        <div class="section" id="t-users"></div>
-        <div class="section">${panel({
-          title: 'Access Control Model', iconName: 'lock',
-          body: `<div class="panel-body"><dl class="dl">
-            <dt>Multi-factor sign-in</dt><dd>Username/password + Google Authenticator OTP (Keycloak via OAuth2 Proxy)</dd>
-            <dt>Gateway authorisation</dt><dd>Access group membership, enforced at the gateway</dd>
-            <dt>Portal sign-in</dt><dd>Username/Employee ID + password, verified by the portal API (bcrypt, PostgreSQL)</dd>
-            <dt>Portal authorisation</dt><dd>Role-based (user / admin), enforced by the portal API</dd>
-            <dt>Logout</dt><dd>Ends the portal, gateway and Keycloak sessions together</dd>
-          </dl></div>`,
-        })}</div>`);
+      mount(`${pageHead('Administration', 'Registered portal users', 'Administration')}
+        <div class="section" id="t-users"></div>`);
 
       dataTable(host('t-users'), {
         title: 'Registered Users',
@@ -472,11 +419,11 @@ const PAGES = {
   '/profile': {
     title: 'My Profile',
     render() {
-      mount(`${pageHead('My Profile', 'Your account and security session details', 'Profile')}
+      mount(`${pageHead('My Profile', 'Your account details', 'Profile')}
         <div id="profile">${stateHtml('loading', 'Loading profile…')}</div>`);
       userService.getProfile()
-        .then(({ user: u, gateway: g, session: s }) => {
-          host('profile').innerHTML = `<div class="grid grid-2 section">
+        .then(({ user: u }) => {
+          host('profile').innerHTML = `<div class="section">
             ${panel({
               title: 'Account Details', iconName: 'user', tagKind: 'live',
               body: `<div class="panel-body"><dl class="dl">
@@ -490,25 +437,6 @@ const PAGES = {
                 <dt>Registered</dt><dd>${esc(fmtDateTime(u.createdAt))}</dd>
               </dl></div>`,
             })}
-            <div class="grid">
-              ${panel({
-                title: 'Multi-Factor Identity', iconName: 'shield', tagKind: 'gateway',
-                body: `<div class="panel-body"><dl class="dl">
-                  <dt>Status</dt><dd>${g.authenticated ? badge('Verified') : badge('Not detected')}</dd>
-                  <dt>Username</dt><dd>${esc(g.username || '-')}</dd>
-                  <dt>Email</dt><dd>${esc(g.email || '-')}</dd>
-                  <dt>Access</dt><dd>${g.authenticated ? badge('Authorised') : badge('Not detected')}</dd>
-                </dl></div>`,
-              })}
-              ${panel({
-                title: 'Portal Session', iconName: 'key',
-                body: `<div class="panel-body"><dl class="dl">
-                  <dt>Signed in at</dt><dd>${esc(fmtDateTime(s.loginAt))}</dd>
-                  <dt>Session expires</dt><dd>${esc(fmtDateTime(s.expiresAt))} (extends with activity)</dd>
-                  <dt>Cookie</dt><dd>HTTP-only, server-side session</dd>
-                </dl></div>`,
-              })}
-            </div>
           </div>`;
         })
         .catch((err) => {
@@ -522,14 +450,13 @@ const PAGES = {
 async function boot() {
   root.innerHTML = `<div class="panel">${stateHtml('loading', 'Verifying your session…')}</div>`;
   try {
-    const [session, gateway] = await Promise.all([authService.session(), userService.getCurrentUser()]);
+    const session = await authService.session();
     if (!session.authenticated) {
       const reason = session.code === 'SESSION_EXPIRED' ? 'expired' : session.code === 'SESSION_INVALIDATED' ? 'invalid' : '';
       window.location.replace(`/?next=${encodeURIComponent(route)}${reason ? `&reason=${reason}` : ''}`);
       return;
     }
     state.user = session.user;
-    state.gateway = gateway;
   } catch (err) {
     if (err.status === 401) return;
     root.innerHTML = `<div class="panel">${stateHtml('error', 'Unable to verify your session. Please try again.', err.message)}</div>`;
@@ -538,7 +465,6 @@ async function boot() {
 
   document.getElementById('hdr-name').textContent = state.user.fullName;
   document.getElementById('hdr-email').textContent = state.user.email;
-  renderMfaBadge(document.getElementById('mfa-badge'), state.gateway);
 
   const page = PAGES[route] || PAGES['/home'];
   document.title = `${page.title} | APSRTC Portal`;

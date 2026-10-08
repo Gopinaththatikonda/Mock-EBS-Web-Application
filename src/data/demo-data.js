@@ -182,7 +182,7 @@ const summary = {
 const notices = [
   { title: 'Portal maintenance window', body: 'Scheduled maintenance on Sunday 02:00-04:00 IST. Services will be read-only.', date: daysAgo(1, 10, 0) },
   { title: 'Dasara special services', body: 'Additional services planned from major depots for the festival season.', date: daysAgo(3, 12, 0) },
-  { title: 'MFA enrolment mandatory', body: 'All users must sign in through the MFA gateway using Google Authenticator.', date: daysAgo(6, 9, 30) },
+  { title: 'Advance reservation extended', body: 'Passengers can now reserve seats up to 60 days before the date of travel.', date: daysAgo(6, 9, 30) },
 ];
 
 module.exports = {

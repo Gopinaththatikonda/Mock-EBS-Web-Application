@@ -183,3 +183,19 @@
 /* Fit the sign-in page on a 900px-tall laptop screen. */
 .auth-body .auth-main { padding-top: 18px; padding-bottom: 18px; }
 .auth-body .auth-form { padding-top: 30px; }
+
+/* ---------- Bus-led announcements ---------- */
+.ticker { min-height: 36px; }
+.ticker-track { position: relative; mask-image: none; -webkit-mask-image: none; }
+.bt-stage { position: absolute; inset: 0; overflow: hidden; }
+.bt-text {
+  position: absolute; left: 18px; top: 50%; margin-top: -10px; line-height: 20px;
+  white-space: nowrap; font-size: 13.5px; font-weight: 600; color: var(--text);
+  clip-path: inset(0 100% 0 0);
+}
+.bt-bus { position: absolute; left: 0; top: 50%; margin-top: -12px; line-height: 0; z-index: 1; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); }
+.bt-bus .tk-wheel { transform-box: fill-box; transform-origin: center; animation: wheel-spin .35s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .bt-text { clip-path: none; }
+  .bt-bus { display: none; }
+}

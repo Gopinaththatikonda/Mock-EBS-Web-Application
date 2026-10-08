@@ -1,8 +1,7 @@
 import { authService } from '../services/authService.js';
-import { userService } from '../services/userService.js';
 import { initLanding, buttonLoading, buttonReset, buttonSuccess, shake } from '../landing.js';
 import { toast, flash, showFlash } from '../toast.js';
-import { renderMfaBadge, wirePasswordToggles, setFieldErrors, safeNext } from '../common.js';
+import { wirePasswordToggles, setFieldErrors, safeNext } from '../common.js';
 
 const form = document.getElementById('login-form');
 const submitBtn = form.querySelector('button[type="submit"]');
@@ -16,7 +15,7 @@ const NOTICES = {
   registered: ['success', 'Account created successfully. Please sign in with your new credentials.', 'Registration complete'],
   expired: ['warning', 'Your session has expired. Please sign in again.', 'Session expired'],
   invalid: ['warning', 'Your session is no longer valid. Please sign in again.', 'Session ended'],
-  loggedout: ['success', 'You have been signed out successfully. All sessions have been closed.', 'Signed out'],
+  loggedout: ['success', 'You have been signed out successfully.', 'Signed out'],
 };
 const notice = params.get('registered') === '1' ? 'registered' : params.get('reason');
 if (NOTICES[notice]) {
@@ -30,18 +29,6 @@ if (notice) {
 }
 
 wirePasswordToggles();
-
-// Multi-factor status (read-only), as forwarded by the gateway.
-userService.getCurrentUser()
-  .then((data) => {
-    renderMfaBadge(document.getElementById('mfa-badge'), data);
-    if (data.authenticated) {
-      document.getElementById('step-gateway').classList.add('done');
-      document.getElementById('step-gateway-desc').textContent =
-        `Verified as ${data.email || data.username}`;
-    }
-  })
-  .catch(() => renderMfaBadge(document.getElementById('mfa-badge'), null));
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
