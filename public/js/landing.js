@@ -115,13 +115,25 @@ function wireNetwork() {
     void el.offsetWidth;
     el.classList.add('bump');
   };
+  // Status line changes slowly: each message stays ~4.5s and cross-fades; only the
+  // latest couple of events are kept so the text never lags far behind the buses.
+  const queue = [];
+  const HOLD_MS = 4500;
   const say = (text) => {
     if (!status) return;
-    status.classList.remove('show');
-    void status.offsetWidth;
-    status.textContent = text;
-    status.classList.add('show');
+    queue.push(text);
+    if (queue.length > 2) queue.shift();
   };
+  const showNext = () => {
+    if (!status || !queue.length) return;
+    const text = queue.shift();
+    status.classList.add('fading');
+    setTimeout(() => {
+      status.textContent = text;
+      status.classList.remove('fading');
+    }, 600);
+  };
+  if (status) setInterval(showNext, HOLD_MS);
   render();
 
   card.querySelectorAll('.net-bus').forEach((bus) => {

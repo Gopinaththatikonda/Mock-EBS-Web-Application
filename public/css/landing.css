@@ -207,3 +207,10 @@
 /* Telugu name entrance */
 .site-header .brand-telugu { animation: slide-in-right .8s .45s cubic-bezier(.2, .7, .2, 1) both; }
 @media (prefers-reduced-motion: reduce) { .site-header .brand-telugu { animation: none; } }
+
+/* Network status line: slow cross-fade between messages */
+.net-status { transition: opacity .6s ease, transform .6s ease; }
+.net-status.fading { opacity: 0; transform: translateY(4px); }
+
+/* Road scene sits at the bottom of the panel and grows to fill any spare height. */
+.auth-info .bus-scene { margin-top: auto; flex: 1 0 150px; }
