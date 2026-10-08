@@ -53,6 +53,12 @@
         <div class="reveal-left d2">
           <h2 class="title-shine">Account Registration</h2>
         </div>
+        <div class="stats reveal d3" aria-label="APSRTC at a glance">
+          <div class="stat"><div class="stat-value" data-count="11000" data-suffix="+">11,000+</div><div class="stat-label">Buses</div></div>
+          <div class="stat"><div class="stat-value" data-count="128">128</div><div class="stat-label">Depots</div></div>
+          <div class="stat"><div class="stat-value" data-count="48000" data-suffix="+">48,000+</div><div class="stat-label">Employees</div></div>
+          <div class="stat"><div class="stat-value" data-count="36" data-suffix=" L+">36 L+</div><div class="stat-label">Daily riders</div></div>
+        </div>
         <div class="network-card reveal d3">
           <div class="network-head">
             <span><span class="live-dot" aria-hidden="true"></span> APSRTC Network &middot; Live</span>
@@ -72,7 +78,7 @@
 
         <form id="signup-form" novalidate>
           <div class="form-grid reveal d4">
-            <div class="field span-2">
+            <div class="field">
               <label for="fullName">Full Name <span class="req">*</span></label>
               <input id="fullName" name="fullName" type="text" autocomplete="name" maxlength="100" required autofocus>
               <div class="error" id="fullName-error"></div>
@@ -87,7 +93,7 @@
               <input id="mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="10" placeholder="10-digit mobile" required>
               <div class="error" id="mobile-error"></div>
             </div>
-            <div class="field span-2">
+            <div class="field">
               <label for="email">Email <span class="req">*</span></label>
               <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
               <div class="error" id="email-error"></div>
