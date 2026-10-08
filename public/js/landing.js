@@ -1,44 +1,151 @@
-// Pre-login landing animations: live clock, ticker, route map, counters, ripples, Caps Lock hint.
+// Pre-login landing animations: live clock, ticker, bus network, counters, ripples, Caps Lock hint.
 import { busScene } from './ui.js';
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Stylised Andhra Pradesh route network (not to scale).
-// [x, y, label, anchor]
-const CITIES = {
-  hyd: [48, 48, 'Hyderabad', 'start'], knl: [118, 112, 'Kurnool', 'start'], atp: [102, 168, 'Anantapur', 'start'],
-  tpt: [232, 176, 'Tirupati', 'start'], nlr: [308, 146, 'Nellore', 'start'], gnt: [338, 104, 'Guntur', 'end'],
-  vja: [372, 80, 'Vijayawada', 'start'], rjy: [452, 58, 'Rajahmundry', 'end'], vsp: [512, 36, 'Visakhapatnam', 'end'],
-  skl: [552, 16, 'Srikakulam', 'end'],
-};
-const ROUTES = [
-  ['vja', 'rjy', 'vsp'], ['vsp', 'skl'], ['vja', 'gnt', 'nlr', 'tpt'], ['vja', 'hyd'],
-  ['knl', 'hyd'], ['knl', 'atp', 'tpt'], ['gnt', 'knl'],
+// Live bus network: buses board at the central bus stand, travel to destinations in every
+// direction, stop and arrive; some services run back into the stand. Decorative / demo only.
+const STAND = [290, 100];
+// [label, x, y, label anchor, label dy, service type, trip seconds, start offset]
+const DESTINATIONS = [
+  ['Hyderabad', 40, 96, 'start', -9, 'Garuda', 9, 0],
+  ['Guntur', 150, 22, 'middle', -8, 'Express', 7, 2.4],
+  ['Rajahmundry', 410, 20, 'middle', -8, 'Super Luxury', 8, 4.1],
+  ['Visakhapatnam', 548, 40, 'end', -9, 'Garuda', 10, 1.2],
+  ['Kakinada', 548, 132, 'end', -9, 'Express', 8.5, 5.6],
+  ['Nellore', 420, 180, 'middle', 15, 'Super Luxury', 7.5, 3.2],
+  ['Tirupati', 220, 182, 'middle', 15, 'Garuda', 9.5, 6.3],
+  ['Kurnool', 64, 172, 'start', 15, 'Express', 8, 7.4],
 ];
-const MOVERS = [[0, '7s'], [2, '9s'], [3, '8s'], [5, '10s'], [6, '6.5s']];
+// Return services: [destination index, trip seconds, start offset] (destination -> stand).
+const RETURNS = [[0, 9.5, 4.6], [3, 10.5, 7], [6, 9, 2], [2, 8.5, 0.6]];
 
-function routePath(stops) {
-  const pts = stops.map((c) => CITIES[c]);
-  let d = `M${pts[0][0]} ${pts[0][1]}`;
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    const cx = (x0 + x1) / 2 + (y1 - y0) * 0.15;
-    const cy = (y0 + y1) / 2 - (x1 - x0) * 0.15;
-    d += ` Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x1} ${y1}`;
-  }
-  return d;
+function curve([x0, y0], [x1, y1], bend = 0.18) {
+  const cx = (x0 + x1) / 2 + (y1 - y0) * bend;
+  const cy = (y0 + y1) / 2 - (x1 - x0) * bend;
+  return [cx.toFixed(1), cy.toFixed(1)];
+}
+
+// Top-down bus (front faces +x) so it reads correctly in any direction of travel.
+const BUS_ICON = `
+  <rect x="-11" y="-5" width="22" height="10" rx="2.6" fill="#FFFFFF"/>
+  <rect x="-9" y="-3.2" width="13.5" height="6.4" rx="1.2" fill="#8B0000"/>
+  <rect x="-8" y="-1.2" width="11.5" height="2.4" fill="#F2C14E"/>
+  <rect x="5.6" y="-4" width="3.8" height="8" rx="1" fill="#2B3A4A"/>
+  <circle cx="10.4" cy="-3.3" r="0.9" fill="#FFE9A8"/><circle cx="10.4" cy="3.3" r="0.9" fill="#FFE9A8"/>`;
+
+function busMover(pathId, dur, begin, cls) {
+  const timing = `dur="${dur}s" begin="-${begin}s" repeatCount="indefinite"`;
+  // Board at the stand (0-8%), travel with ease-in/out (8-80%), wait at destination, fade out.
+  return `<g class="net-bus ${cls}" opacity="0" data-path="${pathId}" data-dur="${dur}">
+    <animate attributeName="opacity" values="0;1;1;1;0" keyTimes="0;0.04;0.8;0.93;1" ${timing}/>
+    <g><animateMotion ${timing} rotate="auto" keyPoints="0;0;1;1" keyTimes="0;0.08;0.8;1"
+        calcMode="spline" keySplines="0 0 1 1;0.45 0 0.55 1;0 0 1 1"><mpath href="#${pathId}"/></animateMotion>
+      <g class="net-bus-shape">${BUS_ICON}</g></g>
+  </g>`;
+}
+
+function arrivalPulse(x, y, dur, begin) {
+  const timing = `dur="${dur}s" begin="-${begin}s" repeatCount="indefinite"`;
+  return `<circle class="arrive" cx="${x}" cy="${y}" r="4" opacity="0">
+    <animate attributeName="r" values="4;4;4;17;17" keyTimes="0;0.79;0.8;0.95;1" ${timing}/>
+    <animate attributeName="opacity" values="0;0;0.95;0;0" keyTimes="0;0.79;0.8;0.95;1" ${timing}/>
+  </circle>`;
 }
 
 export function routeMap() {
-  const paths = ROUTES.map((r, i) => `<path id="rt-${i}" d="${routePath(r)}"/>`).join('');
-  const cities = Object.values(CITIES).map(([x, y, name, anchor]) => `
-    <g class="city" transform="translate(${x} ${y})"><circle class="pulse" r="3.5"/><circle class="dot" r="3"/>
-    ${name ? `<text x="${anchor === 'end' ? -7 : 7}" y="-6" text-anchor="${anchor}">${name}</text>` : ''}</g>`).join('');
-  const movers = reduceMotion ? '' : MOVERS.map(([i, dur]) => `
-    <circle class="mover" r="2.8"><animateMotion dur="${dur}" repeatCount="indefinite"><mpath href="#rt-${i}"/></animateMotion></circle>`).join('');
-  return `<svg class="route-map" viewBox="0 0 580 196" aria-hidden="true" focusable="false">
-    <g class="routes">${paths}</g><g class="cities">${cities}</g><g>${movers}</g></svg>`;
+  const roads = [];
+  const lines = [];
+  const buses = [];
+  const places = [];
+
+  DESTINATIONS.forEach(([name, x, y, anchor, dy, , dur, begin], i) => {
+    const [cx, cy] = curve(STAND, [x, y]);
+    const out = `M${STAND[0]} ${STAND[1]} Q${cx} ${cy} ${x} ${y}`;
+    roads.push(`<path id="out-${i}" d="${out}"/>`);
+    roads.push(`<path id="in-${i}" class="road-back" d="M${x} ${y} Q${cx} ${cy} ${STAND[0]} ${STAND[1]}"/>`);
+    lines.push(`<path d="${out}"/>`);
+    places.push(`<g class="dest">
+      ${reduceMotion ? '' : arrivalPulse(x, y, dur, begin)}
+      <circle class="dest-ring" cx="${x}" cy="${y}" r="6.5"/><circle class="dest-dot" cx="${x}" cy="${y}" r="3.2"/>
+      <text x="${x}" y="${y + dy}" text-anchor="${anchor}">${name}</text></g>`);
+    if (!reduceMotion) buses.push(busMover(`out-${i}`, dur, begin, 'outbound'));
+  });
+  if (!reduceMotion) {
+    RETURNS.forEach(([i, dur, begin]) => buses.push(busMover(`in-${i}`, dur, begin, 'inbound')));
+  }
+
+  const [sx, sy] = STAND;
+  const stand = `<g class="stand">
+    <circle class="stand-glow" cx="${sx}" cy="${sy}" r="16"/>
+    <rect x="${sx - 22}" y="${sy - 11}" width="44" height="22" rx="3" class="stand-body"/>
+    <path d="M${sx - 26} ${sy - 10} L${sx} ${sy - 22} L${sx + 26} ${sy - 10} Z" class="stand-roof"/>
+    <rect x="${sx - 16}" y="${sy - 6}" width="8" height="6" rx="1" class="stand-win"/>
+    <rect x="${sx - 4}" y="${sy - 6}" width="8" height="6" rx="1" class="stand-win"/>
+    <rect x="${sx + 8}" y="${sy - 6}" width="8" height="6" rx="1" class="stand-win"/>
+    <rect x="${sx - 5}" y="${sy + 2}" width="10" height="9" class="stand-door"/>
+    <text x="${sx}" y="${sy + 25}" text-anchor="middle" class="stand-label">Central Bus Stand</text>
+  </g>`;
+
+  return `<svg class="route-map bus-network" viewBox="0 0 580 200" aria-hidden="true" focusable="false">
+    <g class="roads">${roads.join('')}</g>
+    <g class="road-lines">${lines.join('')}</g>
+    <g class="places">${places.join('')}</g>
+    <g class="buses">${buses.join('')}</g>
+    ${stand}
+  </svg>`;
+}
+
+// Live counters + status line driven by each bus trip (SMIL repeatEvent).
+function wireNetwork() {
+  const card = document.querySelector('.network-card');
+  if (!card) return;
+  const dep = card.querySelector('[data-departures]');
+  const arr = card.querySelector('[data-arrivals]');
+  const status = card.querySelector('[data-net-status]');
+  let departures = 1248;
+  let arrivals = 1191;
+  const render = () => {
+    if (dep) dep.textContent = departures.toLocaleString('en-IN');
+    if (arr) arr.textContent = arrivals.toLocaleString('en-IN');
+  };
+  const bump = (el) => {
+    if (!el) return;
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+  };
+  const say = (text) => {
+    if (!status) return;
+    status.classList.remove('show');
+    void status.offsetWidth;
+    status.textContent = text;
+    status.classList.add('show');
+  };
+  render();
+
+  card.querySelectorAll('.net-bus').forEach((bus) => {
+    const motion = bus.querySelector('animateMotion');
+    const [dir, idx] = bus.dataset.path.split('-');
+    const [name, , , , , type] = DESTINATIONS[Number(idx)];
+    const tripMs = Number(bus.dataset.dur) * 1000 * 0.8;
+    motion.addEventListener('repeatEvent', () => {
+      departures += 1;
+      bump(dep);
+      render();
+      say(dir === 'out'
+        ? `Departed: Central Bus Stand → ${name} · ${type}`
+        : `Departed: ${name} → Central Bus Stand · ${type}`);
+      setTimeout(() => {
+        arrivals += 1;
+        bump(arr);
+        render();
+        say(dir === 'out'
+          ? `Arrived: ${type} service reached ${name}`
+          : `Arrived: ${name} service reached Central Bus Stand`);
+      }, tripMs);
+    });
+  });
 }
 
 function startClock(el) {
@@ -104,6 +211,7 @@ function wireCapsLock(root) {
 export function initLanding() {
   document.querySelectorAll('[data-bus-scene]').forEach((el) => { el.outerHTML = busScene('dark'); });
   document.querySelectorAll('[data-route-map]').forEach((el) => { el.outerHTML = routeMap(); });
+  if (!reduceMotion) wireNetwork();
 
   const clock = document.getElementById('live-clock');
   if (clock) startClock(clock);
