@@ -503,3 +503,15 @@ h1, h2, h3 { line-height: 1.25; margin: 0; }
   .bus-scene .puffs circle, .bus-scene .sun, .bus-scene .cloud { animation: none; }
   .bus-scene .bus-rev { left: 60%; }
 }
+
+/* ---------- Telugu corporation name (header, right side) ---------- */
+.brand-telugu {
+  font-family: "Nirmala UI", "Noto Sans Telugu", "Kohinoor Telugu", "Telugu Sangam MN", "Gautami", "Vani", "Mandali", var(--font);
+  font-size: 19px; font-weight: 700; color: var(--primary); line-height: 1.3;
+  text-align: right; white-space: nowrap;
+}
+.header-right .brand-telugu { font-size: 16px; padding-right: 8px; border-right: 1px solid var(--border); margin-right: 4px; }
+@media (max-width: 1200px) { .header-right .brand-telugu { display: none; } }
+@media (max-width: 760px) {
+  .site-header .wrap > .brand-telugu { width: 100%; text-align: left; font-size: 15px; white-space: normal; }
+}

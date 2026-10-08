@@ -148,9 +148,9 @@ function wireNetwork() {
   });
 }
 
-// Announcement bar: a bus drives in and "writes" each announcement behind it, drives off,
-// the text stays to be read, then fades and the next announcement follows.
-const MINI_BUS = `<svg viewBox="0 0 64 28" width="52" height="23" focusable="false">
+// Announcement marquee: all announcements scroll continuously as one group,
+// each led by a bus icon (bus · text · bus · text ...). Seamless loop; pauses on hover.
+const MINI_BUS = `<svg class="mq-bus" viewBox="0 0 64 28" width="46" height="20" aria-hidden="true" focusable="false">
   <rect x="2" y="2" width="58" height="19" rx="4" fill="#8B0000"/>
   <rect x="2" y="2" width="58" height="4" rx="2" fill="#650000"/>
   <rect x="7" y="8" width="7" height="6" rx="1" fill="#FFFFFF"/><rect x="16" y="8" width="7" height="6" rx="1" fill="#FFFFFF"/>
@@ -163,75 +163,28 @@ const MINI_BUS = `<svg viewBox="0 0 64 28" width="52" height="23" focusable="fal
   <g class="tk-wheel"><circle cx="48" cy="22" r="4.5" fill="#1F1F1F"/><circle cx="48" cy="22" r="1.8" fill="#BFC4CA"/></g>
 </svg>`;
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const MARQUEE_SPEED = 70; // pixels per second
 
 function startBusTicker(track) {
   const items = [...track.querySelectorAll('li')].map((li) => li.textContent.trim()).filter(Boolean);
   if (!items.length) return;
 
-  const stage = document.createElement('div');
-  stage.className = 'bt-stage';
-  stage.setAttribute('aria-hidden', 'true');
-  stage.innerHTML = `<span class="bt-text"></span><span class="bt-bus">${MINI_BUS}</span>`;
-  track.appendChild(stage);
-  const text = stage.querySelector('.bt-text');
-  const bus = stage.querySelector('.bt-bus');
-  const START = 18; // where each announcement begins
-  const SPEED = 190; // px per second while writing
+  const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const group = items.map((t) => `<span class="mq-item">${MINI_BUS}<span class="mq-text">${esc(t)}</span></span>`).join('');
 
-  async function play(i) {
-    text.textContent = items[i % items.length];
-    text.getAnimations().forEach((a) => a.cancel());
-    const textW = text.offsetWidth;
-    const trackW = stage.clientWidth;
-    const busW = bus.offsetWidth;
+  const marquee = document.createElement('div');
+  marquee.className = 'mq';
+  marquee.setAttribute('aria-hidden', 'true');
+  // Two identical groups side by side: scrolling by one group width loops seamlessly.
+  marquee.innerHTML = `<div class="mq-group">${group}</div><div class="mq-group">${group}</div>`;
+  track.appendChild(marquee);
 
-    if (reduceMotion) {
-      text.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, fill: 'forwards' });
-      await wait(5000);
-      return play(i + 1);
-    }
-
-    // 1) Bus drives in and writes the text behind it.
-    const from = -busW - 12;
-    const to = START + textW + 6;
-    const writeMs = Math.max(1400, ((to - from) / SPEED) * 1000);
-    const lead = (START - from) / (to - from); // fraction of the drive before writing starts
-    text.animate(
-      [{ clipPath: 'inset(0 100% 0 0)', opacity: 1, offset: 0 },
-        { clipPath: 'inset(0 100% 0 0)', opacity: 1, offset: lead },
-        { clipPath: 'inset(0 0% 0 0)', opacity: 1, offset: 1 }],
-      { duration: writeMs, easing: 'linear', fill: 'forwards' },
-    );
-    await bus.animate(
-      [{ transform: `translateX(${from}px)` }, { transform: `translateX(${to}px)` }],
-      { duration: writeMs, easing: 'linear', fill: 'forwards' },
-    ).finished;
-
-    // 2) Bus speeds away to the right.
-    await bus.animate(
-      [{ transform: `translateX(${to}px)` }, { transform: `translateX(${trackW + 24}px)` }],
-      { duration: Math.max(500, ((trackW - to) / SPEED) * 600), easing: 'ease-in', fill: 'forwards' },
-    ).finished;
-
-    // 3) Hold so it can be read (long text slides to reveal its end on narrow screens).
-    const overflow = START + textW - (trackW - 16);
-    if (overflow > 0) {
-      await text.animate(
-        [{ transform: 'translateX(0)' }, { transform: `translateX(${-overflow}px)` }],
-        { duration: (overflow / 60) * 1000, delay: 900, easing: 'linear', fill: 'forwards' },
-      ).finished;
-    }
-    await wait(2600);
-
-    // 4) Fade out, then the next announcement.
-    await text.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: 'forwards' }).finished;
-    bus.getAnimations().forEach((a) => a.cancel());
-    await wait(250);
-    return play(i + 1);
-  }
-
-  play(0);
+  const setSpeed = () => {
+    const width = marquee.firstElementChild.offsetWidth;
+    marquee.style.setProperty('--mq-duration', `${Math.max(width / MARQUEE_SPEED, 10)}s`);
+  };
+  setSpeed();
+  window.addEventListener('resize', setSpeed);
 }
 
 function startClock(el) {

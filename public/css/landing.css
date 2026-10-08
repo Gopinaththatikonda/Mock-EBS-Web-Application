@@ -184,18 +184,26 @@
 .auth-body .auth-main { padding-top: 18px; padding-bottom: 18px; }
 .auth-body .auth-form { padding-top: 30px; }
 
-/* ---------- Bus-led announcements ---------- */
+/* ---------- Announcement marquee (bus icon + text, continuous scroll) ---------- */
 .ticker { min-height: 36px; }
-.ticker-track { position: relative; mask-image: none; -webkit-mask-image: none; }
-.bt-stage { position: absolute; inset: 0; overflow: hidden; }
-.bt-text {
-  position: absolute; left: 18px; top: 50%; margin-top: -10px; line-height: 20px;
-  white-space: nowrap; font-size: 13.5px; font-weight: 600; color: var(--text);
-  clip-path: inset(0 100% 0 0);
-}
-.bt-bus { position: absolute; left: 0; top: 50%; margin-top: -12px; line-height: 0; z-index: 1; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); }
-.bt-bus .tk-wheel { transform-box: fill-box; transform-origin: center; animation: wheel-spin .35s linear infinite; }
+.ticker-track { position: relative; overflow: hidden; display: flex; align-items: center;
+  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
+.mq { display: flex; width: max-content; animation: marquee var(--mq-duration, 40s) linear infinite; will-change: transform; }
+.ticker:hover .mq { animation-play-state: paused; }
+.mq-group { display: flex; align-items: center; }
+.mq-item { display: inline-flex; align-items: center; gap: 10px; padding: 0 22px 0 18px; white-space: nowrap; }
+.mq-bus { flex: none; transform: scaleX(-1); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); animation: mq-bob .5s ease-in-out infinite alternate; }
+.mq-bus .tk-wheel { transform-box: fill-box; transform-origin: center; animation: wheel-spin .45s linear infinite reverse; }
+.mq-text { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.mq-item:nth-child(odd) .mq-text { color: var(--primary); }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes mq-bob { from { translate: 0 0; } to { translate: 0 -1.5px; } }
 @media (prefers-reduced-motion: reduce) {
-  .bt-text { clip-path: none; }
-  .bt-bus { display: none; }
+  .mq, .mq-bus, .mq-bus .tk-wheel { animation: none; }
+  .ticker-track { overflow-x: auto; }
 }
+
+/* Telugu name entrance */
+.site-header .brand-telugu { animation: slide-in-right .8s .45s cubic-bezier(.2, .7, .2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .site-header .brand-telugu { animation: none; } }
